@@ -39,6 +39,16 @@ constexpr double kBudgetMs = 1000.0 / 60.0;
 
 std::atomic<qint64> g_pendingCaptureNs{0};    // shown by the next swap
 std::atomic<qint64> g_pendingGuiCaptureNs{0}; // enters the scene graph at the next sync
+// Input: the oldest event not yet shown, because that is the one the user is waiting for.
+std::atomic<qint64> g_pendingInputNs{0};
+std::atomic<qint64> g_pendingGuiInputNs{0};
+
+void storeOldest(std::atomic<qint64> &slot, qint64 value)
+{
+    qint64 cur = slot.load();
+    while ((cur == 0 || value < cur) && !slot.compare_exchange_weak(cur, value)) {
+    }
+}
 
 void storeNewest(std::atomic<qint64> &slot, qint64 value)
 {
@@ -95,6 +105,8 @@ void FrameMonitor::Series::clear()
     syncMs.clear();
     renderMs.clear();
     gpuMs.clear();
+    inputMs.clear();
+    inputDispatchMs.clear();
     latencyMs.clear();
     lagMs.clear();
     guiCpuPct.clear();
@@ -161,6 +173,7 @@ void FrameMonitor::setWindow(QQuickWindow *window)
                 Qt::DirectConnection);
         connect(m_window, &QQuickWindow::sceneGraphInitialized, this,
                 &FrameMonitor::onSceneGraphInitialized, Qt::DirectConnection);
+        m_window->installEventFilter(this);
         if (QScreen *s = m_window->screen())
             m_refreshHz = s->refreshRate();
         m_dpr = m_window->effectiveDevicePixelRatio();
@@ -206,6 +219,9 @@ void FrameMonitor::onBeforeSync()
     const qint64 gui = g_pendingGuiCaptureNs.exchange(0);
     if (gui > 0)
         storeNewest(g_pendingCaptureNs, gui);
+    const qint64 input = g_pendingGuiInputNs.exchange(0);
+    if (input > 0)
+        storeOldest(g_pendingInputNs, input);
 }
 
 void FrameMonitor::onAfterSync()
@@ -246,6 +262,7 @@ void FrameMonitor::onFrameSwapped()
     const int64_t now = nowNs();
     const int64_t prev = m_lastSwapNs.exchange(now);
     const qint64 capture = g_pendingCaptureNs.exchange(0);
+    const qint64 input = g_pendingInputNs.exchange(0);
 
     std::lock_guard lk(m_mutex);
     ++m_curFrames;
@@ -256,6 +273,12 @@ void FrameMonitor::onFrameSwapped()
         m_cur.frameMs.add(ms);
         if (m_benchActive)
             m_bench.frameMs.add(ms);
+    }
+    if (input > 0) {
+        const double ms = double(now - input) / 1e6;
+        m_cur.inputMs.add(ms);
+        if (m_benchActive)
+            m_bench.inputMs.add(ms);
     }
     if (capture > 0) {
         QMetaObject::invokeMethod(this, &FrameMonitor::contentShown, Qt::QueuedConnection);
@@ -272,6 +295,34 @@ void markContentCaptured(qint64 captureNs)
     const QCoreApplication *app = QCoreApplication::instance();
     const bool onGuiThread = app && QThread::currentThread() == app->thread();
     storeNewest(onGuiThread ? g_pendingGuiCaptureNs : g_pendingCaptureNs, captureNs);
+}
+
+bool FrameMonitor::eventFilter(QObject *watched, QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonRelease:
+    case QEvent::MouseMove:
+    case QEvent::Wheel:
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::KeyPress: {
+        // Event timestamps are 32-bit milliseconds; compare the same way they wrap.
+        const qint64 now = nowNs();
+        const quint32 waitedMs = quint32(now / 1'000'000) - quint32(static_cast<QInputEvent *>(event)->timestamp());
+        if (waitedMs > 10'000)
+            break; // another clock (for example X11 server time): unusable
+        storeOldest(g_pendingGuiInputNs, now - qint64(waitedMs) * 1'000'000);
+        std::lock_guard lk(m_mutex);
+        m_cur.inputDispatchMs.add(waitedMs);
+        if (m_benchActive)
+            m_bench.inputDispatchMs.add(waitedMs);
+        break;
+    }
+    default:
+        break;
+    }
+    return QObject::eventFilter(watched, event);
 }
 
 void FrameMonitor::reportDisplayed(qint64 captureNs)
@@ -348,6 +399,7 @@ void FrameMonitor::onSecondTick()
         s.latMean = m_cur.latencyMs.mean();
         s.latMax = m_cur.latencyMs.max();
         s.gpuMean = m_cur.gpuMs.mean();
+        s.inputMean = m_cur.inputMs.mean();
         s.slow = int(m_cur.frameMs.countAbove(kBudgetMs * 1.2));
         m_snap = s;
         if (m_benchActive) {
@@ -358,8 +410,9 @@ void FrameMonitor::onSecondTick()
         m_cur.clear();
         m_curFrames = 0;
     }
-    const qreal values[5] = {m_snap.frameP99, m_snap.lagP99, m_snap.procCpu, m_snap.latMean, m_snap.gpuMean};
-    for (int i = 0; i < 5; ++i) {
+    const qreal values[6] = {m_snap.frameP99, m_snap.lagP99, m_snap.procCpu, m_snap.latMean, m_snap.gpuMean,
+                             m_snap.inputMean};
+    for (int i = 0; i < 6; ++i) {
         m_hist[i].append(values[i]);
         if (m_hist[i].size() > kHistoryLength)
             m_hist[i].removeFirst();
@@ -451,6 +504,8 @@ QJsonObject FrameMonitor::buildReport(double measuredSec)
     r["graphicsApi"] = m_graphicsApi;
     r["rhi"] = m_rhiInfo;
     r["gpuMs"] = m_bench.gpuMs.toJson();
+    r["inputLatencyMs"] = m_bench.inputMs.toJson();
+    r["inputDispatchMs"] = m_bench.inputDispatchMs.toJson();
     r["frames"] = double(m_benchFrames);
     r["fps"] = measuredSec > 0 ? double(m_benchFrames) / measuredSec : 0.0;
 

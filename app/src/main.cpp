@@ -1,18 +1,22 @@
 #include "CanvasFeed.h"
 #include "EventLogModel.h"
 #include "FrameStore.h"
+#include "InputRobot.h"
 #include "Lab.h"
 #include "LidarHub.h"
 #include "LidarMailbox.h"
 #include "LidarPipeline.h"
 #include "Scene.h"
+#include "Selection.h"
 #include "TrackListModel.h"
 #include "qp/AppOptions.h"
 #include "qp/SensorSimulator.h"
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQuickItem>
 #include <QQuickStyle>
+#include <QQuickWindow>
 #include <QTextStream>
 #include <QTimer>
 
@@ -57,6 +61,9 @@ int main(int argc, char *argv[])
 
     Lab lab(&hub, requested, opts->variant().isEmpty() ? QStringLiteral("rhi") : opts->variant(),
             opts->extra(QStringLiteral("charts"), true).toBool());
+    lab.setViewMode(opts->extra(QStringLiteral("view"), QStringLiteral("top")).toString());
+    lab.setLodEnabled(opts->extra(QStringLiteral("lod"), true).toBool());
+    Selection selection(&store);
 
     std::unique_ptr<qp::SensorSimulator> sim;
     if (!opts->noSim()) {
@@ -80,6 +87,7 @@ int main(int argc, char *argv[])
     Scene scene({&store, &pipeline, &mailbox, &canvasFeed, &tracks, &events});
     QJSEngine::setObjectOwnership(&scene, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&lab, QJSEngine::CppOwnership);
+    QJSEngine::setObjectOwnership(&selection, QJSEngine::CppOwnership);
 
     QQmlApplicationEngine engine;
     QObject::connect(
@@ -87,7 +95,33 @@ int main(int argc, char *argv[])
         [] { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
     engine.setExternalSingletonInstance("Viewer", "Scene", &scene);
     engine.setExternalSingletonInstance("Viewer", "Lab", &lab);
+    engine.setExternalSingletonInstance("Viewer", "Selection", &selection);
     engine.loadFromModule("Viewer", "Main");
+
+    // --set robot=orbit|click: synthetic input for measuring input-to-photon latency.
+    std::unique_ptr<InputRobot> robot;
+    const QString robotMode = opts->extra(QStringLiteral("robot")).toString();
+    auto *window = engine.rootObjects().isEmpty() ? nullptr : qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    // QML items declared in the window are QObject children of the window, not of its contentItem.
+    auto *viewport = window ? window->findChild<QQuickItem *>(QStringLiteral("viewport")) : nullptr;
+    const bool wantsRobot = robotMode == QLatin1String("orbit") || robotMode == QLatin1String("click");
+    if (wantsRobot && !viewport) {
+        QTextStream(stderr) << "--set robot=" << robotMode << ": viewport not found\n";
+        return 3;
+    }
+    if (wantsRobot) {
+        const QPointF centre = viewport->mapToScene(QPointF(viewport->width() / 2, viewport->height() / 2));
+        const double pxPerMetre = 7; // ViewSettings.pxPerMetre
+        robot = std::make_unique<InputRobot>(
+            window, robotMode == QLatin1String("orbit") ? InputRobot::Mode::Orbit : InputRobot::Mode::Click, centre,
+            [&store, centre, pxPerMetre] {
+                const qp::TrackSetPtr set = store.latestTracks();
+                if (!set || set->tracks.empty())
+                    return QPointF();
+                const qp::Track &t = set->tracks[size_t(std::rand()) % set->tracks.size()];
+                return centre + QPointF(t.x * pxPerMetre, -t.y * pxPerMetre);
+            });
+    }
     const int rc = app.exec();
 
     pipeline.shutdown();

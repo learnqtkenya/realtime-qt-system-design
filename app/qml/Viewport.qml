@@ -8,12 +8,16 @@ Item {
     id: viewport
 
     required property FrameMonitor monitor
+    readonly property bool topDown: Lab.viewMode === "top"
 
+    objectName: "viewport"
     clip: true
 
     Loader {
         anchors.fill: parent
         sourceComponent: {
+            if (!viewport.topDown)
+                return null;
             switch (Lab.renderer) {
             case "canvas":
                 return canvasView;
@@ -50,6 +54,31 @@ Item {
 
             target: Lab
         }
+    }
+
+    // The orbit view: created on first use, then kept (see the Quick 3D loader above).
+    Loader {
+        id: orbit
+
+        anchors.fill: parent
+        active: false
+        source: "Orbit3DView.qml"
+
+        Component.onCompleted: active = Lab.viewMode === "orbit"
+
+        Connections {
+            function onViewModeChanged(): void {
+                if (Lab.viewMode === "orbit")
+                    orbit.active = true;
+            }
+
+            target: Lab
+        }
+    }
+
+    TapHandler {
+        enabled: viewport.topDown
+        onTapped: point => Selection.pickTopDown((point.position.x - viewport.width / 2) / ViewSettings.pxPerMetre, (viewport.height / 2 - point.position.y) / ViewSettings.pxPerMetre)
     }
 
     Component {
@@ -133,7 +162,7 @@ Item {
     }
 
     Repeater {
-        model: Scene.tracks
+        model: viewport.topDown ? Scene.tracks : null
 
         delegate: Item {
             id: track
@@ -145,6 +174,7 @@ Item {
             required property real speed
             required property real boxLength
             required property real boxWidth
+            readonly property bool selected: trackId === Selection.trackId
 
             x: viewport.width / 2 + posX * ViewSettings.pxPerMetre
             y: viewport.height / 2 - posY * ViewSettings.pxPerMetre
@@ -155,9 +185,9 @@ Item {
                 width: track.boxLength * ViewSettings.pxPerMetre
                 height: track.boxWidth * ViewSettings.pxPerMetre
                 rotation: -track.heading * 180 / Math.PI
-                color: "transparent"
-                border.color: "#F8FAFC"
-                border.width: 1
+                color: track.selected ? "#40FBBF24" : "transparent"
+                border.color: track.selected ? "#FBBF24" : "#F8FAFC"
+                border.width: track.selected ? 2 : 1
             }
 
             Text {

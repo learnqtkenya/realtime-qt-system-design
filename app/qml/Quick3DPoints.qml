@@ -7,7 +7,7 @@ import Viewer
 View3D {
     id: view
 
-    readonly property bool live: Lab.renderer === "quick3d"
+    readonly property bool live: Lab.renderer === "quick3d" && Lab.viewMode === "top"
 
     visible: live
 

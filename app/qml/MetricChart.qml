@@ -15,7 +15,7 @@ Item {
     readonly property real current: values.length > 0 ? values[values.length - 1] : 0
     readonly property bool over: threshold >= 0 && current > threshold
 
-    implicitHeight: 48
+    implicitHeight: 42
 
     Label {
         id: titleLabel

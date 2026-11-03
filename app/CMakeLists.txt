@@ -11,6 +11,9 @@ set(VIEWER_SOURCES
     src/PointLayersItem.h src/PointLayersItem.cpp
     src/PointViews.h src/PointViews.cpp
     src/Scene.h
+    src/Selection.h src/Selection.cpp
+    src/TrackIndex.h src/TrackIndex.cpp
+    src/InputRobot.h src/InputRobot.cpp
     src/TrackListModel.h src/TrackListModel.cpp
 )
 
@@ -20,7 +23,7 @@ qt_add_qml_module(viewer
     URI Viewer
     VERSION 1.0
     IMPORT_PATH ${CMAKE_BINARY_DIR}/qml
-    DEPENDENCIES QtQuick QtQuick3D QtQuick.Controls
+    DEPENDENCIES QtQuick QtQuick3D QtQuick3D.Helpers QtQuick.Controls
     QML_FILES
         qml/Main.qml
         qml/Viewport.qml
@@ -28,6 +31,10 @@ qt_add_qml_module(viewer
         qml/MetricChart.qml
         qml/ViewSettings.qml
         qml/Quick3DPoints.qml
+        qml/Orbit3DView.qml
+    RESOURCES
+        qml/heightcolor.vert
+        qml/heightcolor.frag
     SOURCES ${VIEWER_SOURCES}
 )
 # BATCHABLE: the scene graph renderer rewrites material vertex shaders and needs that variant.
@@ -52,3 +59,8 @@ qt_add_executable(tst_viewer tests/tst_viewer.cpp
 target_include_directories(tst_viewer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(tst_viewer PRIVATE qtqmlpro_common Qt6::Gui Qt6::Test)
 add_test(NAME viewer COMMAND tst_viewer)
+
+qt_add_executable(tst_trackindex tests/tst_trackindex.cpp src/TrackIndex.h src/TrackIndex.cpp)
+target_include_directories(tst_trackindex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(tst_trackindex PRIVATE qtqmlpro_common Qt6::Test)
+add_test(NAME trackindex COMMAND tst_trackindex)

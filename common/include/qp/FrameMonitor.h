@@ -53,6 +53,7 @@ class FrameMonitor : public QObject
     Q_PROPERTY(QList<qreal> historyLatency READ historyLatency NOTIFY snapshotChanged FINAL)
     Q_PROPERTY(QList<qreal> historyGpu READ historyGpu NOTIFY snapshotChanged FINAL)
     Q_PROPERTY(int historyLength READ historyLength CONSTANT FINAL)
+    Q_PROPERTY(QList<qreal> historyInput READ historyInput NOTIFY snapshotChanged FINAL)
 
 public:
     explicit FrameMonitor(QObject *parent = nullptr);
@@ -79,6 +80,7 @@ public:
     QList<qreal> historyCpu() const { return m_hist[2]; }
     QList<qreal> historyLatency() const { return m_hist[3]; }
     QList<qreal> historyGpu() const { return m_hist[4]; }
+    QList<qreal> historyInput() const { return m_hist[5]; }
     int historyLength() const { return kHistoryLength; }
     double refreshHz() const { return m_refreshHz; }
     QString graphicsApi() const;
@@ -98,6 +100,7 @@ private:
     struct Series
     {
         RunningSamples frameMs, syncMs, renderMs, latencyMs, lagMs, gpuMs;
+        RunningSamples inputMs, inputDispatchMs;
         RunningSamples guiCpuPct, procCpuPct, rssMb;
         void clear();
     };
@@ -105,7 +108,7 @@ private:
     {
         double fps = 0, frameMean = 0, frameP99 = 0, frameMax = 0;
         double lagP99 = 0, lagMax = 0, guiCpu = 0, procCpu = 0, rss = 0;
-        double latMean = 0, latMax = 0, gpuMean = 0;
+        double latMean = 0, latMax = 0, gpuMean = 0, inputMean = 0;
         int slow = 0;
     };
 
@@ -122,6 +125,7 @@ private:
 
     void samplerMain();
     void watchdogMain(double warmupSec, double durationSec);
+    bool eventFilter(QObject *watched, QEvent *event) override;
     QJsonObject buildReport(double measuredSec);
 
     QPointer<QQuickWindow> m_window;
@@ -137,7 +141,7 @@ private:
     QJsonObject m_rhiInfo;
     Snapshot m_snap;
     static constexpr int kHistoryLength = 60;
-    QList<qreal> m_hist[5]; // GUI thread only
+    QList<qreal> m_hist[6]; // GUI thread only
 
     // render thread only
     int64_t m_syncStart = 0, m_renderStart = 0;

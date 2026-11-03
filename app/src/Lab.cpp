@@ -74,7 +74,7 @@ void Lab::setRenderer(const QString &id)
     if (!info || id == m_renderer)
         return;
     m_renderer = id;
-    m_hub->setRoute(info->route);
+    applyRoute();
     m_switchedAtNs = qp::nowNs();
     emit rendererChanged();
     enforceCap();
@@ -91,9 +91,38 @@ QVariantList Lab::renderers() const
     return out;
 }
 
+void Lab::applyRoute()
+{
+    // The orbit view always draws with Quick 3D, which reads the mailbox.
+    const RendererInfo *info = find(m_renderer);
+    m_hub->setRoute(m_viewMode == QLatin1String("orbit") ? LidarHub::Route::Mailbox
+                    : info                               ? info->route
+                                                         : LidarHub::Route::None);
+}
+
+void Lab::setViewMode(const QString &mode)
+{
+    if ((mode != QLatin1String("top") && mode != QLatin1String("orbit")) || mode == m_viewMode)
+        return;
+    m_viewMode = mode;
+    applyRoute();
+    m_switchedAtNs = qp::nowNs();
+    emit viewModeChanged();
+    emit rendererChanged(); // the cap depends on what draws
+    enforceCap();
+}
+
+void Lab::setLodEnabled(bool on)
+{
+    if (on == m_lodEnabled)
+        return;
+    m_lodEnabled = on;
+    emit lodEnabledChanged();
+}
+
 int Lab::maxPoints() const
 {
-    const RendererInfo *info = find(m_renderer);
+    const RendererInfo *info = m_viewMode == QLatin1String("orbit") ? find(QStringLiteral("quick3d")) : find(m_renderer);
     const double pps = info ? info->maxPointsPerSecond : 80e6;
     const double perFrame = pps / (std::max(1, m_workload.sensors) * std::max(1.0, m_workload.lidarRateHz));
     return int(std::min(1'000'000.0, std::floor(perFrame / 1000) * 1000));

@@ -58,6 +58,25 @@ Rectangle {
         }
     }
 
+    component ToggleButton: Button {
+        id: toggle
+
+        Layout.fillWidth: true
+        checkable: true
+        contentItem: Label {
+            text: toggle.text
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            color: toggle.checked ? "#0B1020" : "#E2E8F0"
+            font.bold: toggle.checked
+        }
+        background: Rectangle {
+            implicitHeight: 30
+            radius: 4
+            color: toggle.checked ? "#38BDF8" : (toggle.hovered ? "#334155" : "#1E293B")
+        }
+    }
+
     component SectionTitle: Label {
         font.pixelSize: 13
         font.bold: true
@@ -67,8 +86,8 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 14
-        spacing: 6
+        anchors.margins: 12
+        spacing: 4
 
         Label {
             text: "Lab"
@@ -78,11 +97,54 @@ Rectangle {
         }
 
         SectionTitle {
-            text: "Renderer"
+            text: "View"
+        }
+        RowLayout {
+            Layout.fillWidth: true
+
+            ToggleButton {
+                text: "Top-down"
+                checked: Lab.viewMode === "top"
+                onClicked: Lab.viewMode = "top"
+            }
+            ToggleButton {
+                text: "3D orbit"
+                checked: Lab.viewMode === "orbit"
+                onClicked: Lab.viewMode = "orbit"
+            }
+        }
+        CheckBox {
+            id: lod
+
+            visible: Lab.viewMode === "orbit"
+            text: "Level of detail (thin points when far)"
+            checked: Lab.lodEnabled
+            onToggled: Lab.lodEnabled = checked
+            indicator: Rectangle {
+                x: lod.leftPadding
+                y: (lod.height - height) / 2
+                implicitWidth: 16
+                implicitHeight: 16
+                radius: 3
+                color: lod.checked ? "#38BDF8" : "transparent"
+                border.color: lod.checked ? "#38BDF8" : "#94A3B8"
+            }
+            contentItem: Label {
+                leftPadding: lod.indicator.width + 8
+                text: lod.text
+                font.pixelSize: 12
+                color: "#E2E8F0"
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
+        SectionTitle {
+            text: Lab.viewMode === "orbit" ? "Renderer (3D orbit always uses Quick 3D)" : "Renderer"
         }
         ComboBox {
             id: rendererBox
 
+            enabled: Lab.viewMode === "top"
             Layout.fillWidth: true
             model: Lab.renderers
             textRole: "name"
@@ -147,9 +209,24 @@ Rectangle {
         }
 
         // Same height with charts off, so the event log (whose cost grows with visible rows) stays the same size.
+        SectionTitle {
+            text: "Selected object"
+        }
+        Caption {
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
+            color: Selection.trackId >= 0 ? "#E2E8F0" : "#94A3B8"
+            text: {
+                const i = Selection.info;
+                if (Selection.trackId < 0 || i.id === undefined)
+                    return "Click an object in the view to inspect it.";
+                return "#" + i.id + "  " + i.cls + "\n" + i.speed.toFixed(1) + " m/s, heading " + i.heading.toFixed(0) + "°\n" + "at (" + i.x.toFixed(1) + ", " + i.y.toFixed(1) + ") m, " + i.distance.toFixed(1) + " m away\n" + i.length.toFixed(1) + " × " + i.width.toFixed(1) + " × " + i.height.toFixed(1) + " m";
+            }
+        }
+
         Loader {
             Layout.fillWidth: true
-            Layout.preferredHeight: 300
+            Layout.preferredHeight: 290
             active: Lab.chartsEnabled
 
             sourceComponent: ColumnLayout {
@@ -178,6 +255,14 @@ Rectangle {
                     threshold: 100
                     decimals: 0
                     color: "#FBBF24"
+                }
+                MetricChart {
+                    Layout.fillWidth: true
+                    title: "Input to photon"
+                    values: panel.monitor.historyInput
+                    threshold: 50
+                    decimals: 0
+                    color: "#7DD3FC"
                 }
                 MetricChart {
                     Layout.fillWidth: true

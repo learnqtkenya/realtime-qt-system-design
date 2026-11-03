@@ -99,7 +99,30 @@ def _step01_series():
     return s
 
 
-MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series()}
+def _step02_series():
+    nominal = ["--points", 150_000, "--rate", 10, "--objects", 50, "--events", 50]
+    peak = ["--points", 300_000, "--rate", 20, "--objects", 50, "--events", 50]
+    stress = ["--points", 600_000, "--rate", 20, "--objects", 50, "--events", 50]
+    orbit = ["--set", "view=orbit"]
+    s = {"control": [("control-nosim", ["--no-sim"], 15)]}
+    s["view"] = [(f"{v}-nominal-r{n}", [*nominal, *(orbit if v == "orbit" else ["--variant", "rhi"])], 20)
+                 for n in (1, 2, 3) for v in ("orbit", "top-rhi")]
+    s["view"].append(("orbit-peak", [*peak, *orbit], 20))
+    s["lod"] = [(f"lod-{state}-far-r{n}", [*stress, *orbit, "--set", "zoom=300", "--set", f"lod={int(state == 'on')}"], 20)
+                for n in (1, 2, 3) for state in ("on", "off")]
+    s["input"] = [(f"input-{name}-r{n}", [*nominal, *args], 20) for n in (1, 2, 3)
+                  for name, args in (("orbit-drag", [*orbit, "--set", "robot=orbit"]),
+                                     ("top-rhi-click", ["--variant", "rhi", "--set", "robot=click"]),
+                                     ("top-painted-click", ["--variant", "painted", "--set", "robot=click"]))]
+    s["pick"] = [(f"pick-{o}-objects", ["--points", 150_000, "--objects", o, "--events", 50, *orbit,
+                                        "--set", "robot=click3d"], 20) for o in (50, 200, 800, 2000)]
+    return s
+
+
+MODULES["step-02"] = ("app/viewer", MODULES["step-01"][1] + ["pick_index_ms", "pick_quick3d_ms", "index_build_ms"])
+MODULE_ENV["step-02"] = {"QSG_RHI_PROFILE": "1"}
+RATES["step-02"] = ["submitted", "uploaded"]
+MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series(), "step-02": _step02_series()}
 
 EXTRA_SERIES = {
     "m03": {

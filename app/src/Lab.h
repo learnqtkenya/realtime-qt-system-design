@@ -29,6 +29,8 @@ class Lab : public QObject
     Q_PROPERTY(int eventsPerSecond READ eventsPerSecond WRITE setEventsPerSecond NOTIFY workloadChanged FINAL)
     Q_PROPERTY(int sensors READ sensors CONSTANT FINAL)
     Q_PROPERTY(bool chartsEnabled READ chartsEnabled CONSTANT FINAL)
+    Q_PROPERTY(QString viewMode READ viewMode WRITE setViewMode NOTIFY viewModeChanged FINAL)
+    Q_PROPERTY(bool lodEnabled READ lodEnabled WRITE setLodEnabled NOTIFY lodEnabledChanged FINAL)
 
 public:
     Lab(LidarHub *hub, const qp::Workload &workload, const QString &renderer, bool chartsEnabled,
@@ -55,6 +57,10 @@ public:
     void setEventsPerSecond(int n);
     int sensors() const { return m_workload.sensors; }
     bool chartsEnabled() const { return m_chartsEnabled; }
+    QString viewMode() const { return m_viewMode; }
+    void setViewMode(const QString &mode); // "top" or "orbit"
+    bool lodEnabled() const { return m_lodEnabled; }
+    void setLodEnabled(bool on);
 
     Q_INVOKABLE void resetToNominal();
     // Cycles through every renderer, one every intervalSec; used by the switch soak.
@@ -66,16 +72,21 @@ public:
 
 signals:
     void rendererChanged();
+    void viewModeChanged();
+    void lodEnabledChanged();
     void workloadChanged();
 
 private:
     void workloadEdited();
     void enforceCap();
+    void applyRoute();
 
     qp::SensorSimulator *m_sim = nullptr;
     LidarHub *m_hub;
     qp::Workload m_workload;
     QString m_renderer;
+    QString m_viewMode = QStringLiteral("top");
+    bool m_lodEnabled = true;
     bool m_chartsEnabled;
     QTimer m_apply; // debounce: sliders emit many values per second
     QTimer m_cycle;

@@ -1,0 +1,29 @@
+[
+  {
+    "camera distance m": 90,
+    "LOD stride": 1,
+    "lit px, all points": 291326,
+    "lit px, LOD": 291326,
+    "lit ratio": 1.0,
+    "LOD px near a full px": 1.0,
+    "full px near a LOD px": 1.0
+  },
+  {
+    "camera distance m": 300,
+    "LOD stride": 4,
+    "lit px, all points": 43025,
+    "lit px, LOD": 35145,
+    "lit ratio": 0.8168506682161534,
+    "LOD px near a full px": 1.0,
+    "full px near a LOD px": 0.981963974433469
+  },
+  {
+    "camera distance m": 500,
+    "LOD stride": 8,
+    "lit px, all points": 15484,
+    "lit px, LOD": 13416,
+    "lit ratio": 0.866442779643503,
+    "LOD px near a full px": 1.0,
+    "full px near a LOD px": 0.9812064066132782
+  }
+]
