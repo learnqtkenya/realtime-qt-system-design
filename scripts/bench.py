@@ -3,6 +3,7 @@
 import json
 import os
 import subprocess
+import time
 import sys
 from pathlib import Path
 
@@ -13,7 +14,13 @@ BUILD = ROOT / "build" / "release"
 def run(app, label, out_dir, args, warmup=3, duration=15, timeout_pad=30, retries=2, env=None):
     for attempt in range(retries + 1):
         report = _run_once(app, label, out_dir, args, warmup, duration, timeout_pad, env)
-        if not report or not report.get("suspectExternalPause"):
+        if not report:
+            print(f"[{label}] no report; retrying", flush=True)
+            continue
+        if report.get("aborted"):
+            print(f"[{label}] aborted: {report['aborted']}; retrying", flush=True)
+            continue
+        if not report.get("suspectExternalPause"):
             break
         print(f"[{label}] presentation paused while the GUI thread was idle; retrying", flush=True)
     if report:
@@ -26,7 +33,7 @@ def _run_once(app, label, out_dir, args, warmup, duration, timeout_pad, env=None
     out = Path(out_dir) / f"{label}.json"
     cmd = [str(app), "--bench", "--warmup", str(warmup), "--duration", str(duration),
            "--label", label, "--out", str(out), *map(str, args)]
-    print(f"[{label}] {' '.join(cmd[1:])}", flush=True)
+    print(f"{time.strftime('%H:%M:%S')} [{label}] {' '.join(cmd[1:])}", flush=True)
     try:
         proc = subprocess.run(cmd, timeout=warmup + duration + timeout_pad,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
@@ -84,6 +91,7 @@ def row(report, stages, rates=()):
         "stalled": report["stalled"],
         "exit": report.get("exitStatus"),
         "ext pause": report.get("suspectExternalPause"),
+        "aborted": bool(report.get("aborted")),
         "stderr": len(report.get("stderrLines", [])),
         "gpu p50": report.get("gpuMs", {}).get("p50") or None,
         "gpu p99": report.get("gpuMs", {}).get("p99") or None,

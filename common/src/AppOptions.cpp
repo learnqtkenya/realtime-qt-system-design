@@ -45,6 +45,7 @@ bool AppOptions::parse(const QStringList &arguments)
     p.addOption({"still", "Freeze the scene: fixed lidar cloud, stationary tracks."});
     p.addOption({"grab", "Save a window screenshot to this file, then exit.", "file", ""});
     p.addOption({"grab-after", "Seconds before --grab.", "s", "3"});
+    p.addOption({"set", "App-specific setting, repeatable.", "key=value"});
 
     QTextStream err(stderr);
     if (!p.parse(arguments)) {
@@ -107,6 +108,14 @@ bool AppOptions::parse(const QStringList &arguments)
     m_variant = p.value("variant");
     m_workload.still = p.isSet("still");
     m_grabPath = p.value("grab");
+    for (const QString &kv : p.values("set")) {
+        const qsizetype eq = kv.indexOf(u'=');
+        if (eq <= 0) {
+            err << "invalid --set (expected key=value): " << kv << '\n';
+            return false;
+        }
+        m_extra.insert(kv.left(eq), kv.mid(eq + 1));
+    }
     if (!num("grab-after", 0.5, 600, m_grabAfterSec))
         return false;
     if (!QStringList{"default", "opengl", "vulkan", "software"}.contains(m_graphicsApi)) {
@@ -124,6 +133,11 @@ void AppOptions::applyGraphicsApi() const
         QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
     else if (m_graphicsApi == QLatin1String("software"))
         QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+}
+
+QVariant AppOptions::extra(const QString &key, const QVariant &fallback) const
+{
+    return m_extra.value(key, fallback);
 }
 
 QVariantMap AppOptions::workloadMap() const
@@ -144,6 +158,7 @@ QVariantMap AppOptions::workloadMap() const
         {"workers", m_workers},
         {"variant", m_variant},
         {"still", m_workload.still},
+        {"set", m_extra},
     };
 }
 

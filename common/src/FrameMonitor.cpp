@@ -258,6 +258,7 @@ void FrameMonitor::onFrameSwapped()
             m_bench.frameMs.add(ms);
     }
     if (capture > 0) {
+        QMetaObject::invokeMethod(this, &FrameMonitor::contentShown, Qt::QueuedConnection);
         const double ms = double(now - capture) / 1e6;
         m_cur.latencyMs.add(ms);
         if (m_benchActive)
@@ -349,8 +350,19 @@ void FrameMonitor::onSecondTick()
         s.gpuMean = m_cur.gpuMs.mean();
         s.slow = int(m_cur.frameMs.countAbove(kBudgetMs * 1.2));
         m_snap = s;
+        if (m_benchActive) {
+            m_benchFpsSeries.append(s.fps);
+            m_benchFrameP99Series.append(s.frameP99);
+            m_benchLagP99Series.append(s.lagP99);
+        }
         m_cur.clear();
         m_curFrames = 0;
+    }
+    const qreal values[5] = {m_snap.frameP99, m_snap.lagP99, m_snap.procCpu, m_snap.latMean, m_snap.gpuMean};
+    for (int i = 0; i < 5; ++i) {
+        m_hist[i].append(values[i]);
+        if (m_hist[i].size() > kHistoryLength)
+            m_hist[i].removeFirst();
     }
     emit snapshotChanged();
 }
@@ -363,6 +375,14 @@ void FrameMonitor::startBenchmark(double warmupSec, double durationSec, const QS
     m_benchOut = outPath;
     m_benchLabel = label;
     m_benchExtras = QJsonObject::fromVariantMap(extras);
+    connect(qApp, &QCoreApplication::aboutToQuit, this, [this] {
+        if (m_reportWritten)
+            return;
+        const double measured = m_benchStartNs > 0 ? double(nowNs() - m_benchStartNs) / 1e9 : 0.0;
+        QJsonObject report = buildReport(measured);
+        report["aborted"] = QStringLiteral("application quit before the benchmark ended");
+        writeReport(report);
+    });
     m_watchdog = std::thread([this, warmupSec, durationSec] { watchdogMain(warmupSec, durationSec); });
 }
 
@@ -379,6 +399,9 @@ void FrameMonitor::watchdogMain(double warmupSec, double durationSec)
         std::lock_guard sl(m_mutex);
         m_bench.clear();
         m_benchFrames = 0;
+        m_benchFpsSeries.clear();
+        m_benchFrameP99Series.clear();
+        m_benchLagP99Series.clear();
         m_benchActive = true;
         m_benchStartNs = nowNs();
     }
@@ -388,17 +411,7 @@ void FrameMonitor::watchdogMain(double warmupSec, double durationSec)
         return;
 
     const double measured = double(nowNs() - m_benchStartNs) / 1e9;
-    const QJsonObject report = buildReport(measured);
-
-    QFileInfo fi(m_benchOut);
-    QDir().mkpath(fi.absolutePath());
-    QFile f(m_benchOut);
-    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        f.write(QJsonDocument(report).toJson(QJsonDocument::Indented));
-        f.close();
-    } else {
-        qCWarning(lcFrameMonitor) << "cannot write report" << m_benchOut;
-    }
+    writeReport(buildReport(measured));
 
     QMetaObject::invokeMethod(qApp, &QCoreApplication::quit, Qt::QueuedConnection);
 
@@ -406,6 +419,18 @@ void FrameMonitor::watchdogMain(double warmupSec, double durationSec)
         return;
     qCWarning(lcFrameMonitor) << "GUI thread did not exit after the benchmark; forcing exit";
     std::_Exit(4);
+}
+
+void FrameMonitor::writeReport(const QJsonObject &report)
+{
+    if (m_reportWritten.exchange(true))
+        return;
+    QDir().mkpath(QFileInfo(m_benchOut).absolutePath());
+    QFile f(m_benchOut);
+    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        f.write(QJsonDocument(report).toJson(QJsonDocument::Indented));
+    else
+        qCWarning(lcFrameMonitor) << "cannot write report" << m_benchOut;
 }
 
 QJsonObject FrameMonitor::buildReport(double measuredSec)
@@ -463,6 +488,9 @@ QJsonObject FrameMonitor::buildReport(double measuredSec)
     for (double v : rss)
         rssSeries.append(v);
     r["rssSeriesMb"] = rssSeries;
+    r["fpsSeries"] = QJsonArray::fromVariantList(QVariantList(m_benchFpsSeries.begin(), m_benchFpsSeries.end()));
+    r["frameP99Series"] = QJsonArray::fromVariantList(QVariantList(m_benchFrameP99Series.begin(), m_benchFrameP99Series.end()));
+    r["lagP99Series"] = QJsonArray::fromVariantList(QVariantList(m_benchLagP99Series.begin(), m_benchLagP99Series.end()));
     r["rssGrowthMbPerMinute"] = slope * 60.0;
 
     const int64_t lastSwap = m_lastSwapNs.load();

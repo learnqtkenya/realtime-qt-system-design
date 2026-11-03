@@ -15,10 +15,12 @@ qt_add_qml_module(qtqmlpro_common
         include/qp/AppOptions.h
         include/qp/SensorSimulator.h
         include/qp/FrameMonitor.h
+        include/qp/Sparkline.h
         src/StageStats.cpp
         src/AppOptions.cpp
         src/SensorSimulator.cpp
         src/FrameMonitor.cpp
+        src/Sparkline.cpp
     QML_FILES
         qml/Hud.qml
 )

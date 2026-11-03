@@ -1,4 +1,4 @@
-# Module 4: pixel parity against the CPU raster (Module 3)
+# Pixel parity: every variant against `raster`
 
 Scene: `--still --points 20000 --objects 50 --events 0 --grab-after 3`. Region x 0-1040, y 170-800. Precision and recall allow 1 pixel of positional tolerance. Pass: both ≥ 0.98, white (track box) pixel count within 10%, no stderr output.
 

@@ -1,0 +1,163 @@
+{
+  "budgetMs": 16.666666666666668,
+  "devicePixelRatio": 1,
+  "eventLoopLagMs": {
+    "max": 0.953036,
+    "mean": 0.08706610106666687,
+    "min": 0,
+    "n": 7500,
+    "p50": 0.06443999999999983,
+    "p95": 0.20785755000000014,
+    "p99": 0.5057316400000018
+  },
+  "extras": {
+    "app": "viewer",
+    "eventsPerSecond": 50,
+    "lidarRateHz": 10,
+    "noSim": true,
+    "objects": 50,
+    "pointsPerFrame": 10000,
+    "pointsPerSecond": 400000,
+    "policy": "drop-oldest",
+    "queueDepth": 1,
+    "renderer": "rhi",
+    "requestedGraphicsApi": "default",
+    "seed": 1,
+    "sensors": 4,
+    "set": {},
+    "still": false,
+    "trackRateHz": 10,
+    "variant": "",
+    "workers": 4
+  },
+  "fps": 59.93288853940327,
+  "frameMs": {
+    "max": 18.22243,
+    "mean": 16.682600579532814,
+    "min": 15.121411,
+    "n": 899,
+    "p50": 16.675427,
+    "p95": 17.5277982,
+    "p99": 17.8876855
+  },
+  "frames": 899,
+  "framesOver": {
+    "gt100ms": 0,
+    "gt20ms": 0,
+    "gt33ms": 0
+  },
+  "gpuMs": {
+    "max": 0.214568,
+    "mean": 0.10206666407119017,
+    "min": 0.091494,
+    "n": 899,
+    "p50": 0.10039000000000001,
+    "p95": 0.107885,
+    "p99": 0.19183367999999998
+  },
+  "graphicsApi": "opengl",
+  "guiCpuPercent": {
+    "max": 2.3581455885006037,
+    "mean": 1.782268118874565,
+    "min": 1.3004984504233228,
+    "n": 15,
+    "p50": 1.78132709651939,
+    "p95": 2.1755996865923564,
+    "p99": 2.321636408118954
+  },
+  "kernel": "7.0.0-38-generic",
+  "label": "control-nosim",
+  "latencyMs": {
+    "max": 0,
+    "mean": 0,
+    "min": 0,
+    "n": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0
+  },
+  "measuredSeconds": 15.000111323,
+  "msSinceLastFrame": 11.002289,
+  "msSinceLastGuiTick": -1.719041,
+  "presentationPauseMs": 0,
+  "processCpuPercent": {
+    "max": 7.526211729261602,
+    "mean": 6.732713845795836,
+    "min": 5.992784513868921,
+    "n": 15,
+    "p50": 6.63519827562755,
+    "p95": 7.321907859708105,
+    "p99": 7.485350955350903
+  },
+  "qtVersion": "6.12.0",
+  "refreshHz": 59.95100021362305,
+  "renderMs": {
+    "max": 0.438217,
+    "mean": 0.08704772747497222,
+    "min": 0.033825,
+    "n": 899,
+    "p50": 0.082407,
+    "p95": 0.12915300000000002,
+    "p99": 0.22295065999999988
+  },
+  "rhi": {
+    "backend": "OpenGL",
+    "device": "AMD AMD Radeon 780M Graphics (radeonsi, phoenix, ACO, DRM 3.64, 7.0.0-38-generic) 4.6 (Compatibility Profile) Mesa 26.0.8-1ubuntu0.3",
+    "timestamps": true,
+    "vertexShaderPointSize": true
+  },
+  "rssGrowthMb": 0.0390625,
+  "rssGrowthMbPerMinute": 0.17075892857142858,
+  "rssMb": {
+    "max": 144.671875,
+    "mean": 144.653125,
+    "min": 144.6328125,
+    "n": 15,
+    "p50": 144.65234375,
+    "p95": 144.669140625,
+    "p99": 144.671328125
+  },
+  "rssSeriesMb": [
+    144.6328125,
+    144.63671875,
+    144.63671875,
+    144.640625,
+    144.64453125,
+    144.6484375,
+    144.65234375,
+    144.65234375,
+    144.65625,
+    144.66015625,
+    144.6640625,
+    144.6640625,
+    144.66796875,
+    144.66796875,
+    144.671875
+  ],
+  "stages": {
+    "rhi_prepare_ms": {
+      "max": 0.064153,
+      "mean": 0.005876515016685213,
+      "min": 0.001543,
+      "n": 899,
+      "p50": 0.005471,
+      "p95": 0.008622899999999985,
+      "p99": 0.015924439999999988
+    }
+  },
+  "stalled": false,
+  "suspectExternalPause": false,
+  "syncMs": {
+    "max": 0.310232,
+    "mean": 0.009752601779755284,
+    "min": 0.002484,
+    "n": 899,
+    "p50": 0.007044,
+    "p95": 0.013671999999999993,
+    "p99": 0.12506723999999989
+  },
+  "timestamp": "2026-11-03T12:09:19Z",
+  "exitStatus": 0,
+  "stderrLines": [],
+  "attempts": 1
+}

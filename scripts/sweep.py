@@ -13,26 +13,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bench  # noqa: E402
 
 MODULES = {
-    "m01": ("01-first-implementation/m01_first",
+    "m01": ("experiments/01-first-implementation/m01_first",
             ["convert_points_ms", "lidar_signal_ms", "canvas_paint_ms",
              "convert_tracks_ms", "tracks_rebuild_ms", "event_reset_ms"]),
-    "m02": ("02-boundaries/m02_boundaries",
+    "m02": ("experiments/02-boundaries/m02_boundaries",
             ["paint_ms", "tracks_rebuild_ms", "event_reset_ms"]),
-    "m03": ("03-pipeline/m03_pipeline",
+    "m03": ("experiments/03-pipeline/m03_pipeline",
             ["raster_ms", "upload_ms", "tracks_rebuild_ms", "event_reset_ms"]),
-    "m04": ("04-gpu/m04_gpu",
+    "m04": ("experiments/04-gpu/m04_gpu",
             ["sg_copy_ms", "rhi_prepare_ms", "q3d_setdata_ms", "raster_ms",
              "tracks_rebuild_ms", "event_reset_ms"]),
 }
 
-# GPU timestamps on for every run of these modules, including baselines run alongside them.
-MODULE_ENV = {"m04": {"QSG_RHI_PROFILE": "1"}}
+MODULES["step-01"] = ("app/viewer",
+                      ["convert_points_ms", "lidar_signal_ms", "canvas_paint_ms", "paint_ms", "raster_ms",
+                       "sg_copy_ms", "rhi_prepare_ms", "q3d_setdata_ms", "tracks_rebuild_ms",
+                       "event_reset_ms", "switch_to_content_ms", "workload_apply_ms"])
 
-RATES = {"m03": ["submitted", "dropped", "raster_ms", "upload_ms"],
+# GPU timestamps on for every run of these modules, including baselines run alongside them.
+MODULE_ENV = {"m04": {"QSG_RHI_PROFILE": "1"}, "step-01": {"QSG_RHI_PROFILE": "1"}}
+
+RATES = {"step-01": ["submitted", "uploaded", "raster_ms", "dropped"],
+         "m03": ["submitted", "dropped", "raster_ms", "upload_ms"],
          "m04": ["submitted", "uploaded", "raster_ms"]}
 
 PEAK = ["--points", 300_000, "--rate", 20, "--objects", 50, "--events", 50]
-M03 = "03-pipeline/m03_pipeline"
+M03 = "experiments/03-pipeline/m03_pipeline"
 NOMINAL = ["--points", 150_000, "--objects", 50, "--events", 50]
 GPU_VARIANTS = ("sg", "rhi", "quick3d")
 
@@ -64,7 +70,36 @@ def _m04_series():
     return s
 
 
-MODULE_SERIES = {"m04": _m04_series()}
+RENDERER_PPS = {"canvas": 0.5e6, "painted": 6e6}  # mirrors Lab's caps: points per second
+
+
+def capped(renderer, points, rate):
+    pps = RENDERER_PPS.get(renderer)
+    return points if pps is None else min(points, int(pps / (4 * rate) // 1000 * 1000))
+RENDERERS = ("canvas", "painted", "worker", "sg", "rhi", "quick3d")
+
+
+def _step01_series():
+    def load(r, points, rate):
+        return ["--variant", r, "--points", capped(r, points, rate), "--rate", rate,
+                "--objects", 50, "--events", 50]
+    s = {"control": [("control-nosim", ["--no-sim"], 15)]}
+    # Interleaved so machine drift is spread across renderers.
+    s["nominal"] = [(f"nominal-{r}-r{n}", load(r, 150_000, 10), 20) for n in (1, 2, 3) for r in RENDERERS]
+    s["peak"] = [(f"peak-{r}", load(r, 300_000, 20), 20) for r in RENDERERS]
+    s["charts"] = [(f"charts-{state}-{r}-r{n}", [*load(r, 150_000, 10), "--set", f"charts={int(state == 'on')}"], 20)
+                   for n in (1, 2, 3) for r in ("rhi", "worker") for state in ("on", "off")]
+    s["switch"] = [(f"switch-soak-r{n}", ["--points", 20_000, "--set", "cycle=1.5"], 60) for n in (1, 2)]
+    s["soak"] = [("soak-all-300s", ["--points", 20_000, "--set", "cycle=1.5"], 300),
+                 ("soak-no-canvas-300s", ["--points", 20_000, "--set", "cycle=1.5",
+                                          "--set", "cycleSet=painted,worker,sg,rhi,quick3d"], 300)]
+    s["recover"] = [(f"recover-canvas-to-rhi-r{n}", [*load("canvas", 150_000, 10), "--set", "switchTo=rhi@10"], 25)
+                    for n in (1, 2)]
+    s["loadchange"] = [(f"loadchange-{r}", ["--variant", r, "--set", "loadCycle=3"], 30) for r in ("rhi", "worker")]
+    return s
+
+
+MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series()}
 
 EXTRA_SERIES = {
     "m03": {
@@ -94,6 +129,7 @@ def main():
     ap.add_argument("module", choices=MODULES)
     ap.add_argument("--series", nargs="*")
     ap.add_argument("--summarise-only", action="store_true")
+    ap.add_argument("--only", nargs="*", help="run only these labels")
     a = ap.parse_args()
 
     app_rel, stages = MODULES[a.module]
@@ -101,7 +137,7 @@ def main():
     env = MODULE_ENV.get(a.module)
     rates = RATES.get(a.module, [])
     a.series = a.series or list(series)
-    app = bench.BUILD / "modules" / app_rel
+    app = bench.BUILD / app_rel
     out = bench.ROOT / "results" / a.module
     raw = out / "raw"
     raw.mkdir(parents=True, exist_ok=True)
@@ -109,7 +145,9 @@ def main():
     if not a.summarise_only:
         for name in a.series:
             for label, args, duration, *override in series[name]:
-                target = bench.BUILD / "modules" / override[0] if override else app
+                if a.only and label not in a.only:
+                    continue
+                target = bench.BUILD / override[0] if override else app
                 bench.run(target, label, raw, args, duration=duration, env=env)
 
     sections = [f"# {a.module} sweep summary\n\nEnvironment: {json.dumps(bench.env_note())}\n",

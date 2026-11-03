@@ -1,0 +1,10 @@
+15:39:57 [nominal-canvas-r1] --bench --warmup 3 --duration 20 --label nominal-canvas-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-canvas-r1.json --variant canvas --points 25000 --rate 10 --objects 50 --events 50
+15:40:20 [nominal-canvas-r2] --bench --warmup 3 --duration 20 --label nominal-canvas-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-canvas-r2.json --variant canvas --points 25000 --rate 10 --objects 50 --events 50
+15:40:45 [nominal-canvas-r3] --bench --warmup 3 --duration 20 --label nominal-canvas-r3 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-canvas-r3.json --variant canvas --points 25000 --rate 10 --objects 50 --events 50
+15:41:09 [peak-canvas] --bench --warmup 3 --duration 20 --label peak-canvas --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/peak-canvas.json --variant canvas --points 12000 --rate 20 --objects 50 --events 50
+15:41:32 [peak-painted] --bench --warmup 3 --duration 20 --label peak-painted --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/peak-painted.json --variant painted --points 75000 --rate 20 --objects 50 --events 50
+15:41:55 [switch-soak-r1] --bench --warmup 3 --duration 60 --label switch-soak-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/switch-soak-r1.json --points 20000 --set cycle=1.5
+15:42:58 [switch-soak-r2] --bench --warmup 3 --duration 60 --label switch-soak-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/switch-soak-r2.json --points 20000 --set cycle=1.5
+15:44:01 [recover-canvas-to-rhi-r1] --bench --warmup 3 --duration 25 --label recover-canvas-to-rhi-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/recover-canvas-to-rhi-r1.json --variant canvas --points 25000 --rate 10 --objects 50 --events 50 --set switchTo=rhi@10
+15:44:29 [recover-canvas-to-rhi-r2] --bench --warmup 3 --duration 25 --label recover-canvas-to-rhi-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/recover-canvas-to-rhi-r2.json --variant canvas --points 25000 --rate 10 --objects 50 --events 50 --set switchTo=rhi@10
+wrote /home/user/Documents/Qt/QtQMLPro/results/step-01/summary.md

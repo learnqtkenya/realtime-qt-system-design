@@ -21,6 +21,8 @@ public:
 
     void start();
     void stop();
+    // Any time, from the owner's thread; takes effect on the simulator thread.
+    void setWorkload(const Workload &workload);
 
     const Workload &workload() const { return m_workload; }
     quint64 lidarFramesEmitted() const { return m_lidarEmitted.load(std::memory_order_relaxed); }

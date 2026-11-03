@@ -1,5 +1,7 @@
 #include "qp/SensorSimulator.h"
 
+#include "qp/StageStats.h"
+
 #include <QTimer>
 
 #include <algorithm>
@@ -127,46 +129,62 @@ public:
     Worker(SensorSimulator *owner, const Workload &w) : m_owner(owner), m_w(w), m_rng(w.seed + 99u) {}
 
 public slots:
-    void init()
-    {
-        m_pool.resize(size_t(m_w.sensors));
-        for (int s = 0; s < m_w.sensors; ++s)
-            for (int v = 0; v < kPoolVariants; ++v)
-                m_pool[size_t(s)].push_back(SensorSimulator::makeCloud(m_w, s, v));
-        m_lidarSeq.assign(size_t(m_w.sensors), 0);
+    void init() { apply(m_w, true); }
 
-        initTracks();
+    // Simulator thread. Rebuilds only what the new workload changes.
+    void apply(const Workload &w, bool first = false)
+    {
+        const int64_t t0 = nowNs();
+        const bool clouds = first || w.sensors != m_w.sensors || w.pointsPerFrame != m_w.pointsPerFrame
+                            || w.seed != m_w.seed;
+        const bool tracks = first || w.objects != int(m_tracks.size());
+        m_w = w;
+
+        qDeleteAll(m_timers);
+        m_timers.clear();
+
+        if (clouds) {
+            m_pool.assign(size_t(m_w.sensors), {});
+            for (int s = 0; s < m_w.sensors; ++s)
+                for (int v = 0; v < kPoolVariants; ++v)
+                    m_pool[size_t(s)].push_back(SensorSimulator::makeCloud(m_w, s, v));
+        }
+        m_lidarSeq.resize(size_t(m_w.sensors), 0);
+        if (tracks)
+            initTracks();
 
         const int lidarMs = std::max(1, int(std::lround(1000.0 / m_w.lidarRateHz)));
         for (int s = 0; s < m_w.sensors; ++s) {
-            auto *t = new QTimer(this);
-            t->setTimerType(Qt::PreciseTimer);
-            t->setInterval(lidarMs);
+            auto *t = addTimer(lidarMs);
             connect(t, &QTimer::timeout, this, [this, s] { emitLidar(s); });
-            const int offset = lidarMs * s / std::max(1, m_w.sensors);
-            QTimer::singleShot(offset, Qt::PreciseTimer, this, [t] { t->start(); });
+            // Context t: a timer deleted by a later apply() cancels its pending start.
+            QTimer::singleShot(lidarMs * s / std::max(1, m_w.sensors), Qt::PreciseTimer, t, [t] { t->start(); });
         }
-
-        m_trackTimer = new QTimer(this);
-        m_trackTimer->setTimerType(Qt::PreciseTimer);
-        m_trackTimer->setInterval(std::max(1, int(std::lround(1000.0 / m_w.trackRateHz))));
-        connect(m_trackTimer, &QTimer::timeout, this, &Worker::emitTracks);
-        m_trackTimer->start();
-
-        m_eventTimer = new QTimer(this);
-        m_eventTimer->setTimerType(Qt::PreciseTimer);
-        m_eventTimer->setInterval(kEventBatchMs);
-        connect(m_eventTimer, &QTimer::timeout, this, &Worker::emitEvents);
-        m_eventTimer->start();
+        auto *trackTimer = addTimer(std::max(1, int(std::lround(1000.0 / m_w.trackRateHz))));
+        connect(trackTimer, &QTimer::timeout, this, &Worker::emitTracks);
+        trackTimer->start();
+        auto *eventTimer = addTimer(kEventBatchMs);
+        connect(eventTimer, &QTimer::timeout, this, &Worker::emitEvents);
+        eventTimer->start();
+        if (!first)
+            StageStats::instance().add(QStringLiteral("workload_apply_ms"), double(nowNs() - t0) / 1e6);
     }
 
 private:
     static constexpr int kEventBatchMs = 50;
 
+    QTimer *addTimer(int intervalMs)
+    {
+        auto *t = new QTimer(this);
+        t->setTimerType(Qt::PreciseTimer);
+        t->setInterval(intervalMs);
+        m_timers.push_back(t);
+        return t;
+    }
+
     void initTracks()
     {
         m_tracks.resize(size_t(std::max(0, m_w.objects)));
-        m_vel.resize(m_tracks.size());
         for (size_t i = 0; i < m_tracks.size(); ++i) {
             Track &t = m_tracks[i];
             t.id = quint32(1000 + i);
@@ -254,9 +272,7 @@ private:
     std::vector<std::vector<std::shared_ptr<const PointCloud>>> m_pool;
     std::vector<quint64> m_lidarSeq;
     std::vector<Track> m_tracks;
-    std::vector<float> m_vel;
-    QTimer *m_trackTimer = nullptr;
-    QTimer *m_eventTimer = nullptr;
+    std::vector<QTimer *> m_timers;
     quint64 m_trackSeq = 0;
     quint64 m_eventSeq = 0;
     double m_eventCarry = 0;
@@ -276,6 +292,12 @@ SensorSimulator::SensorSimulator(const Workload &workload, QObject *parent)
 SensorSimulator::~SensorSimulator()
 {
     stop();
+}
+
+void SensorSimulator::setWorkload(const Workload &workload)
+{
+    m_workload = workload;
+    QMetaObject::invokeMethod(m_worker, [w = m_worker, workload] { w->apply(workload); }, Qt::QueuedConnection);
 }
 
 void SensorSimulator::start()

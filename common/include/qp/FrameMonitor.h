@@ -46,6 +46,13 @@ class FrameMonitor : public QObject
     Q_PROPERTY(double refreshHz READ refreshHz NOTIFY windowChanged FINAL)
     Q_PROPERTY(QString graphicsApi READ graphicsApi NOTIFY snapshotChanged FINAL)
     Q_PROPERTY(double gpuMsMean READ gpuMsMean NOTIFY snapshotChanged FINAL)
+    // One value per second, oldest first, at most historyLength values.
+    Q_PROPERTY(QList<qreal> historyFrameP99 READ historyFrameP99 NOTIFY snapshotChanged FINAL)
+    Q_PROPERTY(QList<qreal> historyLagP99 READ historyLagP99 NOTIFY snapshotChanged FINAL)
+    Q_PROPERTY(QList<qreal> historyCpu READ historyCpu NOTIFY snapshotChanged FINAL)
+    Q_PROPERTY(QList<qreal> historyLatency READ historyLatency NOTIFY snapshotChanged FINAL)
+    Q_PROPERTY(QList<qreal> historyGpu READ historyGpu NOTIFY snapshotChanged FINAL)
+    Q_PROPERTY(int historyLength READ historyLength CONSTANT FINAL)
 
 public:
     explicit FrameMonitor(QObject *parent = nullptr);
@@ -67,6 +74,12 @@ public:
     double latencyMsMax() const { return m_snap.latMax; }
     int slowFrames() const { return m_snap.slow; }
     double gpuMsMean() const { return m_snap.gpuMean; }
+    QList<qreal> historyFrameP99() const { return m_hist[0]; }
+    QList<qreal> historyLagP99() const { return m_hist[1]; }
+    QList<qreal> historyCpu() const { return m_hist[2]; }
+    QList<qreal> historyLatency() const { return m_hist[3]; }
+    QList<qreal> historyGpu() const { return m_hist[4]; }
+    int historyLength() const { return kHistoryLength; }
     double refreshHz() const { return m_refreshHz; }
     QString graphicsApi() const;
 
@@ -78,6 +91,8 @@ public:
 signals:
     void windowChanged();
     void snapshotChanged();
+    // Queued to the GUI thread when a swap showed newly marked content.
+    void contentShown();
 
 private:
     struct Series
@@ -121,6 +136,8 @@ private:
     QString m_graphicsApi = QStringLiteral("unknown");
     QJsonObject m_rhiInfo;
     Snapshot m_snap;
+    static constexpr int kHistoryLength = 60;
+    QList<qreal> m_hist[5]; // GUI thread only
 
     // render thread only
     int64_t m_syncStart = 0, m_renderStart = 0;
@@ -142,6 +159,9 @@ private:
     QString m_benchOut, m_benchLabel;
     QJsonObject m_benchExtras;
     int64_t m_benchStartNs = 0;
+    std::atomic<bool> m_reportWritten{false};
+    QList<double> m_benchFpsSeries, m_benchFrameP99Series, m_benchLagP99Series; // guarded by m_mutex
+    void writeReport(const QJsonObject &report);
 };
 
 } // namespace qp

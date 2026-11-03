@@ -1,0 +1,6 @@
+15:45:57 [nominal-canvas-r1] --bench --warmup 3 --duration 20 --label nominal-canvas-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-canvas-r1.json --variant canvas --points 12000 --rate 10 --objects 50 --events 50
+15:46:20 [nominal-canvas-r2] --bench --warmup 3 --duration 20 --label nominal-canvas-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-canvas-r2.json --variant canvas --points 12000 --rate 10 --objects 50 --events 50
+15:46:43 [nominal-canvas-r3] --bench --warmup 3 --duration 20 --label nominal-canvas-r3 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-canvas-r3.json --variant canvas --points 12000 --rate 10 --objects 50 --events 50
+15:47:06 [soak-all-300s] --bench --warmup 3 --duration 300 --label soak-all-300s --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/soak-all-300s.json --points 20000 --set cycle=1.5
+15:52:10 [soak-no-canvas-300s] --bench --warmup 3 --duration 300 --label soak-no-canvas-300s --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/soak-no-canvas-300s.json --points 20000 --set cycle=1.5 --set cycleSet=painted,worker,sg,rhi,quick3d
+wrote /home/user/Documents/Qt/QtQMLPro/results/step-01/summary.md

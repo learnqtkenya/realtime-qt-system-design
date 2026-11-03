@@ -14,14 +14,23 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bench  # noqa: E402
 
-OUT = bench.ROOT / "results" / "m04" / "parity"
 SCENE = ["--still", "--points", "20000", "--objects", "50", "--events", "0", "--grab-after", "3"]
-REFERENCE = ("raster", bench.BUILD / "modules/03-pipeline/m03_pipeline", [])
-VARIANTS = [(v, bench.BUILD / "modules/04-gpu/m04_gpu", ["--variant", v]) for v in ("sg", "rhi", "rhi-ring", "quick3d")]
 APIS = ("opengl", "vulkan")
-
-# Point area only: left of the event log, below the HUD.
-REGION = (0, 170, 1040, 800)
+VIEWER = bench.BUILD / "app/viewer"
+MODES = {
+    # Experiments: Module 3's raster against Module 4's GPU renderers.
+    "exp": dict(out=bench.ROOT / "results" / "m04" / "parity",
+                reference=("raster", bench.BUILD / "experiments/03-pipeline/m03_pipeline", []),
+                variants=[(v, bench.BUILD / "experiments/04-gpu/m04_gpu", ["--variant", v])
+                          for v in ("sg", "rhi", "rhi-ring", "quick3d")],
+                region=(0, 170, 1040, 800)),  # left of the event log, below the HUD
+    # The product: every renderer against the app's own worker raster.
+    "app": dict(out=bench.ROOT / "results" / "step-01" / "parity",
+                reference=("worker", VIEWER, ["--variant", "worker"]),
+                variants=[(v, VIEWER, ["--variant", v]) for v in ("canvas", "painted", "sg", "rhi", "quick3d")],
+                region=(0, 170, 1220, 900)),  # left of the lab panel, below the HUD
+}
+OUT = REFERENCE = VARIANTS = REGION = None
 SENSOR_RGB = [(0x38, 0xBD, 0xF8), (0x34, 0xD3, 0x99), (0xFB, 0xBF, 0x24), (0xF4, 0x72, 0xB6)]
 PASS = 0.98
 
@@ -79,6 +88,9 @@ def near(a, b):
 
 
 def main():
+    global OUT, REFERENCE, VARIANTS, REGION
+    mode = MODES[sys.argv[1] if len(sys.argv) > 1 else "exp"]
+    OUT, REFERENCE, VARIANTS, REGION = mode["out"], mode["reference"], mode["variants"], mode["region"]
     OUT.mkdir(parents=True, exist_ok=True)
     rows, failures = [], []
     for api in APIS:
@@ -107,7 +119,7 @@ def main():
             print({k: (round(v, 3) if isinstance(v, float) else v) for k, v in row.items()}, flush=True)
 
     (OUT.parent / "parity.json").write_text(json.dumps(rows, indent=2))
-    md = ["# Module 4: pixel parity against the CPU raster (Module 3)\n",
+    md = [f"# Pixel parity: every variant against `{REFERENCE[0]}`\n",
           f"Scene: `{' '.join(SCENE)}`. Region x {REGION[0]}-{REGION[2]}, y {REGION[1]}-{REGION[3]}. "
           f"Precision and recall allow 1 pixel of positional tolerance. Pass: both ≥ {PASS}, "
           "white (track box) pixel count within 10%, no stderr output.\n",

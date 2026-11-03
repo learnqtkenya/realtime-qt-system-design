@@ -59,6 +59,8 @@ public:
     QString variant() const { return m_variant; }
     QString grabPath() const { return m_grabPath; }
     double grabAfterSec() const { return m_grabAfterSec; }
+    // --set key=value (repeatable): app-specific settings.
+    Q_INVOKABLE QVariant extra(const QString &key, const QVariant &fallback = {}) const;
 
     Q_INVOKABLE QVariantMap workloadMap() const;
 
@@ -79,6 +81,7 @@ private:
     QString m_variant;
     QString m_grabPath;
     double m_grabAfterSec = 3.0;
+    QVariantMap m_extra;
 };
 
 } // namespace qp

@@ -1,0 +1,14 @@
+15:31:09 [nominal-quick3d-r1] --bench --warmup 3 --duration 20 --label nominal-quick3d-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-quick3d-r1.json --variant quick3d --points 150000 --rate 10 --objects 50 --events 50
+15:31:32 [nominal-quick3d-r2] --bench --warmup 3 --duration 20 --label nominal-quick3d-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-quick3d-r2.json --variant quick3d --points 150000 --rate 10 --objects 50 --events 50
+15:31:55 [nominal-worker-r3] --bench --warmup 3 --duration 20 --label nominal-worker-r3 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-worker-r3.json --variant worker --points 150000 --rate 10 --objects 50 --events 50
+15:32:19 [nominal-quick3d-r3] --bench --warmup 3 --duration 20 --label nominal-quick3d-r3 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/nominal-quick3d-r3.json --variant quick3d --points 150000 --rate 10 --objects 50 --events 50
+15:32:42 [peak-quick3d] --bench --warmup 3 --duration 20 --label peak-quick3d --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/peak-quick3d.json --variant quick3d --points 300000 --rate 20 --objects 50 --events 50
+15:33:05 [switch-soak-r1] --bench --warmup 3 --duration 60 --label switch-soak-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/switch-soak-r1.json --points 20000 --set cycle=1.5
+15:34:08 [switch-soak-r2] --bench --warmup 3 --duration 60 --label switch-soak-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/switch-soak-r2.json --points 20000 --set cycle=1.5
+[switch-soak-r2] presentation paused while the GUI thread was idle; retrying
+15:35:12 [switch-soak-r2] --bench --warmup 3 --duration 60 --label switch-soak-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/switch-soak-r2.json --points 20000 --set cycle=1.5
+15:36:15 [loadchange-rhi] --bench --warmup 3 --duration 30 --label loadchange-rhi --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/loadchange-rhi.json --variant rhi --set loadCycle=3
+[loadchange-rhi] presentation paused while the GUI thread was idle; retrying
+15:36:48 [loadchange-rhi] --bench --warmup 3 --duration 30 --label loadchange-rhi --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/loadchange-rhi.json --variant rhi --set loadCycle=3
+15:37:21 [loadchange-worker] --bench --warmup 3 --duration 30 --label loadchange-worker --out /home/user/Documents/Qt/QtQMLPro/results/step-01/raw/loadchange-worker.json --variant worker --set loadCycle=3
+wrote /home/user/Documents/Qt/QtQMLPro/results/step-01/summary.md

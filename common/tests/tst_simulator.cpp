@@ -110,6 +110,60 @@ private slots:
         QCOMPARE(set->tracks.size(), size_t(37));
     }
 
+    void workloadCanChangeWhileRunning()
+    {
+        qp::Workload w;
+        w.sensors = 2;
+        w.pointsPerFrame = 1000;
+        w.lidarRateHz = 10;
+        w.objects = 5;
+        qp::SensorSimulator sim(w);
+        QSignalSpy lidar(&sim, &qp::SensorSimulator::lidarFrame);
+        QSignalSpy tracks(&sim, &qp::SensorSimulator::trackSet);
+        sim.start();
+        QTRY_VERIFY_WITH_TIMEOUT(lidar.count() >= 4, 2000);
+
+        w.pointsPerFrame = 3000;
+        w.lidarRateHz = 40;
+        w.objects = 12;
+        sim.setWorkload(w);
+        QTest::qWait(300); // let the rebuild finish
+        lidar.clear();
+        tracks.clear();
+        QTest::qWait(1000);
+        sim.stop();
+
+        // 2 sensors * 40 Hz * 1 s = 80
+        QVERIFY2(lidar.count() >= 64 && lidar.count() <= 84, qPrintable(QString::number(lidar.count())));
+        for (const auto &args : lidar)
+            QCOMPARE(args.at(0).value<qp::SensorFrame>().cloud->count(), 3000);
+        QVERIFY(!tracks.isEmpty());
+        QCOMPARE(tracks.last().at(0).value<qp::TrackSetPtr>()->tracks.size(), size_t(12));
+    }
+
+    void repeatedWorkloadChangesAreSafe()
+    {
+        qp::Workload w;
+        w.sensors = 4;
+        w.pointsPerFrame = 500;
+        w.lidarRateHz = 50;
+        qp::SensorSimulator sim(w);
+        QSignalSpy lidar(&sim, &qp::SensorSimulator::lidarFrame);
+        sim.start();
+        for (int i = 0; i < 40; ++i) { // faster than the stagger timers fire
+            w.pointsPerFrame = 500 + 100 * (i % 5);
+            w.lidarRateHz = (i % 2) ? 50 : 25;
+            sim.setWorkload(w);
+            QTest::qWait(5);
+        }
+        lidar.clear();
+        QTest::qWait(500);
+        sim.stop();
+        QVERIFY(lidar.count() > 20);
+        for (const auto &args : lidar)
+            QCOMPARE(args.at(0).value<qp::SensorFrame>().cloud->count(), w.pointsPerFrame);
+    }
+
     void captureTimestampsAreMonotonic()
     {
         qp::Workload w;

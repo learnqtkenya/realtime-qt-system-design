@@ -8,7 +8,7 @@
     "precision": 0.9969648483248932,
     "recall": 0.996752820781947,
     "white ratio": 1.0,
-    "colour error": 0.38973378896760574,
+    "colour error": 0.38971992944421047,
     "stderr": 0,
     "pass": true
   },
@@ -47,7 +47,7 @@
     "precision": 0.9969782533313518,
     "recall": 0.996703621096825,
     "white ratio": 1.0,
-    "colour error": 1.1000292457523924,
+    "colour error": 1.1000212395360869,
     "stderr": 0,
     "pass": true
   },
@@ -60,7 +60,7 @@
     "precision": 0.9969628443622799,
     "recall": 0.996752874034472,
     "white ratio": 1.0,
-    "colour error": 0.3862158213248236,
+    "colour error": 0.38619874915203284,
     "stderr": 0,
     "pass": true
   },
@@ -73,7 +73,7 @@
     "precision": 0.9969628443622799,
     "recall": 0.996752874034472,
     "white ratio": 1.0,
-    "colour error": 0.3862016481562721,
+    "colour error": 0.38620133637774795,
     "stderr": 0,
     "pass": true
   },
@@ -86,7 +86,7 @@
     "precision": 0.9969628443622799,
     "recall": 0.996752874034472,
     "white ratio": 1.0,
-    "colour error": 0.38620133637774795,
+    "colour error": 0.3862151392719056,
     "stderr": 0,
     "pass": true
   },
@@ -99,7 +99,7 @@
     "precision": 0.9969762561755424,
     "recall": 0.9967036751562064,
     "white ratio": 1.0,
-    "colour error": 1.0966004037839936,
+    "colour error": 1.0965838805936958,
     "stderr": 0,
     "pass": true
   }
