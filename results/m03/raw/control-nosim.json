@@ -1,0 +1,115 @@
+{
+  "budgetMs": 16.666666666666668,
+  "eventLoopLagMs": {
+    "max": 2.4379099999999996,
+    "mean": 0.08280767862381638,
+    "min": 0,
+    "n": 7499,
+    "p50": 0.06375799999999998,
+    "p95": 0.20103589999999996,
+    "p99": 0.5164350599999991
+  },
+  "extras": {
+    "app": "m03_pipeline",
+    "eventsPerSecond": 50,
+    "lidarRateHz": 10,
+    "noSim": true,
+    "objects": 50,
+    "pointsPerFrame": 10000,
+    "pointsPerSecond": 400000,
+    "policy": "drop-oldest",
+    "queueDepth": 1,
+    "requestedGraphicsApi": "default",
+    "seed": 1,
+    "sensors": 4,
+    "trackRateHz": 10,
+    "workers": 4
+  },
+  "fps": 59.93294367330675,
+  "frameMs": {
+    "max": 19.544029,
+    "mean": 16.682234917686326,
+    "min": 14.153851,
+    "n": 899,
+    "p50": 16.671817,
+    "p95": 17.308484399999998,
+    "p99": 17.7727795
+  },
+  "frames": 899,
+  "framesOver": {
+    "gt100ms": 0,
+    "gt20ms": 0,
+    "gt33ms": 0
+  },
+  "graphicsApi": "opengl",
+  "guiCpuPercent": {
+    "max": 1.9549172184316537,
+    "mean": 1.6755433961910942,
+    "min": 1.444648122566129,
+    "n": 15,
+    "p50": 1.6593146340095386,
+    "p95": 1.9273515177493816,
+    "p99": 1.9494040782951993
+  },
+  "kernel": "7.0.0-38-generic",
+  "label": "control-nosim",
+  "latencyMs": {
+    "max": 0,
+    "mean": 0,
+    "min": 0,
+    "n": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0
+  },
+  "measuredSeconds": 15.000097524,
+  "msSinceLastFrame": 4.70575,
+  "msSinceLastGuiTick": -1.600715,
+  "presentationPauseMs": 0,
+  "processCpuPercent": {
+    "max": 6.387425949479828,
+    "mean": 5.965911294505777,
+    "min": 5.149360135360219,
+    "n": 15,
+    "p50": 6.010895381544224,
+    "p95": 6.336072257107793,
+    "p99": 6.37715521100542
+  },
+  "qtVersion": "6.12.0",
+  "refreshHz": 59.95100021362305,
+  "renderMs": {
+    "max": 0.205742,
+    "mean": 0.044840410456062275,
+    "min": 0.016822,
+    "n": 899,
+    "p50": 0.041288,
+    "p95": 0.07241799999999995,
+    "p99": 0.10753893999999994
+  },
+  "rssGrowthMb": 0.03125,
+  "rssGrowthMbPerMinute": 0.14815848214285715,
+  "rssMb": {
+    "max": 131.13671875,
+    "mean": 131.12239583333334,
+    "min": 131.10546875,
+    "n": 15,
+    "p50": 131.1171875,
+    "p95": 131.13671875,
+    "p99": 131.13671875
+  },
+  "stages": {},
+  "stalled": false,
+  "suspectExternalPause": false,
+  "syncMs": {
+    "max": 0.198279,
+    "mean": 0.008510341490545048,
+    "min": 0.002655,
+    "n": 899,
+    "p50": 0.006473,
+    "p95": 0.013656,
+    "p99": 0.08001441999999999
+  },
+  "timestamp": "2026-11-03T10:44:39Z",
+  "exitStatus": 0,
+  "attempts": 1
+}

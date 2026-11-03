@@ -1,0 +1,16 @@
+[control-nosim] --bench --warmup 3 --duration 15 --label control-nosim --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/control-nosim.json --no-sim
+[A-pts1k] --bench --warmup 3 --duration 15 --label A-pts1k --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/A-pts1k.json --points 1000 --objects 50 --events 50
+[A-pts5k] --bench --warmup 3 --duration 15 --label A-pts5k --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/A-pts5k.json --points 5000 --objects 50 --events 50
+[A-pts10k] --bench --warmup 3 --duration 15 --label A-pts10k --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/A-pts10k.json --points 10000 --objects 50 --events 50
+[A-pts25k] --bench --warmup 3 --duration 15 --label A-pts25k --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/A-pts25k.json --points 25000 --objects 50 --events 50
+[A-pts50k] --bench --warmup 3 --duration 15 --label A-pts50k --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/A-pts50k.json --points 50000 --objects 50 --events 50
+[A-pts100k] --bench --warmup 3 --duration 15 --label A-pts100k --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/A-pts100k.json --points 100000 --objects 50 --events 50
+[A-pts150k] --bench --warmup 3 --duration 15 --label A-pts150k --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/A-pts150k.json --points 150000 --objects 50 --events 50
+[B-obj50] --bench --warmup 3 --duration 15 --label B-obj50 --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/B-obj50.json --points 1000 --objects 50 --events 50
+[B-obj200] --bench --warmup 3 --duration 15 --label B-obj200 --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/B-obj200.json --points 1000 --objects 200 --events 50
+[B-obj400] --bench --warmup 3 --duration 15 --label B-obj400 --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/B-obj400.json --points 1000 --objects 400 --events 50
+[B-obj800] --bench --warmup 3 --duration 15 --label B-obj800 --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/B-obj800.json --points 1000 --objects 800 --events 50
+[C-ev50] --bench --warmup 3 --duration 30 --label C-ev50 --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/C-ev50.json --points 1000 --objects 50 --events 50
+[C-ev500] --bench --warmup 3 --duration 30 --label C-ev500 --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/C-ev500.json --points 1000 --objects 50 --events 500
+[C-ev2000] --bench --warmup 3 --duration 30 --label C-ev2000 --out /home/user/Documents/Qt/QtQMLPro/results/m01/raw/C-ev2000.json --points 1000 --objects 50 --events 2000
+wrote /home/user/Documents/Qt/QtQMLPro/results/m01/summary.md

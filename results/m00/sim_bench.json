@@ -1,0 +1,82 @@
+{
+    "delivery": {
+        "deliveredFraction": 0.985,
+        "deliveryMs": {
+            "max": 0.17253,
+            "mean": 0.05072553045685276,
+            "min": 0.017954,
+            "n": 394,
+            "p50": 0.039680999999999994,
+            "p95": 0.09068699999999999,
+            "p99": 0.12217194999999997
+        },
+        "expectedFrames": 400,
+        "interArrivalJitterMs": 0.7142159999999933,
+        "interArrivalMs": {
+            "max": 100.714216,
+            "mean": 100.00042121794874,
+            "min": 99.356855,
+            "n": 390,
+            "p50": 100.34348750000001,
+            "p95": 100.57545015,
+            "p99": 100.65733232000001
+        },
+        "receivedFrames": 394,
+        "seconds": 10
+    },
+    "generation": {
+        "rows": [
+            {
+                "bytes": 120000,
+                "medianMs": 0.179162,
+                "nsPerPoint": 17.9162,
+                "points": 10000
+            },
+            {
+                "bytes": 600000,
+                "medianMs": 0.956456,
+                "nsPerPoint": 19.12912,
+                "points": 50000
+            },
+            {
+                "bytes": 1800000,
+                "medianMs": 2.798711,
+                "nsPerPoint": 18.658073333333334,
+                "points": 150000
+            },
+            {
+                "bytes": 3600000,
+                "medianMs": 5.833163,
+                "nsPerPoint": 19.443876666666668,
+                "points": 300000
+            }
+        ]
+    },
+    "kernel": "7.0.0-38-generic",
+    "memcpy": {
+        "bestGBps": 18.25944095534599,
+        "bufferMiB": 256,
+        "medianGBps": 17.825439877931785,
+        "note": "payload GB/s; memory traffic is about twice this (read + write)"
+    },
+    "qtVersion": "6.12.0",
+    "variantConversion": {
+        "rows": [
+            {
+                "medianMs": 0.23582,
+                "nsPerPoint": 23.582,
+                "points": 10000
+            },
+            {
+                "medianMs": 1.091013,
+                "nsPerPoint": 21.82026,
+                "points": 50000
+            },
+            {
+                "medianMs": 4.034791,
+                "nsPerPoint": 26.89860666666667,
+                "points": 150000
+            }
+        ]
+    }
+}
