@@ -20,6 +20,7 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void appendBatch(const qp::EventBatch &batch);
+    void replaceAll(const qp::EventBatch &batch);
 
 private:
     std::vector<qp::EventRecord> m_events;

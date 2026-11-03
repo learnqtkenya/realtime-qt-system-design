@@ -16,11 +16,12 @@ class InputRobot : public QObject
     Q_OBJECT
 
 public:
-    enum class Mode { Orbit, Click };
+    enum class Mode { Orbit, Click, Scrub };
 
     // target() returns where to click (window coordinates), or a null point to skip a beat.
+    // Scrub drags back and forth through centre ± span horizontally.
     InputRobot(QWindow *window, Mode mode, QPointF centre, std::function<QPointF()> target = {},
-               QObject *parent = nullptr);
+               qreal span = 0, QObject *parent = nullptr);
 
 private:
     void tick();
@@ -29,6 +30,7 @@ private:
     QPointer<QWindow> m_window;
     Mode m_mode;
     QPointF m_centre;
+    qreal m_span;
     std::function<QPointF()> m_target;
     QTimer m_timer;
     int m_step = 0;

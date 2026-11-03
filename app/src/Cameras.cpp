@@ -35,6 +35,27 @@ void Cameras::lidarAdvanced()
         f->realign();
 }
 
+void Cameras::setMarkSink(const std::function<void(const rec::CameraMark &)> &sink)
+{
+    for (CameraFeed *f : std::as_const(m_feeds))
+        f->setMarkSink(sink);
+}
+
+void Cameras::setLive(bool live, qint64 delayNs)
+{
+    for (CameraFeed *f : std::as_const(m_feeds)) {
+        f->setPresentationDelay(delayNs);
+        if (live)
+            f->goLive();
+    }
+}
+
+void Cameras::follow(const rec::CameraMark &mark, qint64 playheadNs, double rate, bool playing, qint64 wallNs)
+{
+    if (m_enabled && mark.camera >= 0 && mark.camera < m_feeds.size())
+        m_feeds[mark.camera]->follow(mark, playheadNs, rate, playing, wallNs);
+}
+
 void Cameras::setEnabled(bool on)
 {
     on = on && available();

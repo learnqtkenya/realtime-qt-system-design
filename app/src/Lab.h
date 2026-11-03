@@ -28,6 +28,8 @@ class Lab : public QObject
     Q_PROPERTY(int objects READ objects WRITE setObjects NOTIFY workloadChanged FINAL)
     Q_PROPERTY(int eventsPerSecond READ eventsPerSecond WRITE setEventsPerSecond NOTIFY workloadChanged FINAL)
     Q_PROPERTY(int sensors READ sensors CONSTANT FINAL)
+    // Simulated lidar processing time: frames reach us this long after capture.
+    Q_PROPERTY(int lidarDelayMs READ lidarDelayMs WRITE setLidarDelayMs NOTIFY workloadChanged FINAL)
     Q_PROPERTY(bool chartsEnabled READ chartsEnabled CONSTANT FINAL)
     Q_PROPERTY(QString viewMode READ viewMode WRITE setViewMode NOTIFY viewModeChanged FINAL)
     Q_PROPERTY(bool lodEnabled READ lodEnabled WRITE setLodEnabled NOTIFY lodEnabledChanged FINAL)
@@ -56,6 +58,8 @@ public:
     int eventsPerSecond() const { return m_workload.eventsPerSecond; }
     void setEventsPerSecond(int n);
     int sensors() const { return m_workload.sensors; }
+    int lidarDelayMs() const { return int(m_workload.lidarDelayMs); }
+    void setLidarDelayMs(int ms);
     bool chartsEnabled() const { return m_chartsEnabled; }
     QString viewMode() const { return m_viewMode; }
     void setViewMode(const QString &mode); // "top" or "orbit"

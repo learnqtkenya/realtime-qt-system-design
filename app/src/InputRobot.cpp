@@ -9,13 +9,13 @@
 
 #include <cmath>
 
-InputRobot::InputRobot(QWindow *window, Mode mode, QPointF centre, std::function<QPointF()> target,
+InputRobot::InputRobot(QWindow *window, Mode mode, QPointF centre, std::function<QPointF()> target, qreal span,
                        QObject *parent)
-    : QObject(parent), m_window(window), m_mode(mode), m_centre(centre), m_target(std::move(target))
+    : QObject(parent), m_window(window), m_mode(mode), m_centre(centre), m_span(span), m_target(std::move(target))
 {
     connect(&m_timer, &QTimer::timeout, this, &InputRobot::tick);
     m_timer.setTimerType(Qt::PreciseTimer);
-    m_timer.start(mode == Mode::Orbit ? 16 : 200);
+    m_timer.start(mode == Mode::Click ? 200 : 16);
 }
 
 void InputRobot::post(int type, QPointF pos, Qt::MouseButton button, Qt::MouseButtons buttons)
@@ -40,6 +40,18 @@ void InputRobot::tick()
         else if (m_step % 180 == 0)
             post(QEvent::MouseButtonRelease, p, Qt::LeftButton, Qt::NoButton);
         else
+            post(QEvent::MouseMove, p, Qt::NoButton, Qt::LeftButton);
+        return;
+    }
+    if (m_mode == Mode::Scrub) {
+        // Hold for 4 s while sweeping the whole bar and back, then let go for 1 s.
+        const int phase = m_step % 300;
+        const QPointF p = m_centre + QPointF(m_span * std::sin(phase * 2 * M_PI / 240), 0);
+        if (phase == 1)
+            post(QEvent::MouseButtonPress, p, Qt::LeftButton, Qt::LeftButton);
+        else if (phase == 240)
+            post(QEvent::MouseButtonRelease, p, Qt::LeftButton, Qt::NoButton);
+        else if (phase > 1 && phase < 240)
             post(QEvent::MouseMove, p, Qt::NoButton, Qt::LeftButton);
         return;
     }

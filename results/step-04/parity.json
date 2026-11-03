@@ -1,0 +1,80 @@
+[
+  {
+    "variant": "replay-float32",
+    "api": "opengl",
+    "ref lit px": 62380,
+    "lit px": 62380,
+    "lit ratio": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "white ratio": 1.0,
+    "colour error": 0.40442745630341687,
+    "stderr": 0,
+    "pass": true
+  },
+  {
+    "variant": "replay-int16planar",
+    "api": "opengl",
+    "ref lit px": 62380,
+    "lit px": 62411,
+    "lit ratio": 1.0004969541519717,
+    "precision": 0.999903863101056,
+    "recall": 0.9999519076627124,
+    "white ratio": 1.0,
+    "colour error": 0.40520891430213185,
+    "stderr": 0,
+    "pass": true
+  },
+  {
+    "variant": "live-seed2 (must fail)",
+    "api": "opengl",
+    "ref lit px": 62380,
+    "lit px": 63852,
+    "lit ratio": 1.023597306829112,
+    "precision": 0.8291361272943683,
+    "recall": 0.8308913113177301,
+    "white ratio": 0.9263123573524616,
+    "colour error": 0.26279931334693435,
+    "stderr": 0,
+    "pass": false
+  },
+  {
+    "variant": "replay-float32",
+    "api": "vulkan",
+    "ref lit px": 62335,
+    "lit px": 62335,
+    "lit ratio": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "white ratio": 1.0,
+    "colour error": 0.4004471120615673,
+    "stderr": 0,
+    "pass": true
+  },
+  {
+    "variant": "replay-int16planar",
+    "api": "vulkan",
+    "ref lit px": 62335,
+    "lit px": 62495,
+    "lit ratio": 1.002566776289404,
+    "precision": 0.9999199935994879,
+    "recall": 0.9999358305927649,
+    "white ratio": 1.0,
+    "colour error": 0.4018200954007707,
+    "stderr": 0,
+    "pass": true
+  },
+  {
+    "variant": "live-seed2 (must fail)",
+    "api": "vulkan",
+    "ref lit px": 62335,
+    "lit px": 63856,
+    "lit ratio": 1.024400417101147,
+    "precision": 0.8290372087196192,
+    "recall": 0.8311221625090238,
+    "white ratio": 0.9256360078277887,
+    "colour error": 0.2633617707231613,
+    "stderr": 0,
+    "pass": false
+  }
+]

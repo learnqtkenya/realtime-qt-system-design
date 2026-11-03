@@ -28,6 +28,11 @@ public:
     Cameras(const QString &mediaDir, LidarHub *hub, const QString &decoder, QObject *parent = nullptr);
     // Call (GUI thread) when lidar data arrives, so aligned cameras follow the lidar clock.
     void lidarAdvanced();
+    void setMarkSink(const std::function<void(const rec::CameraMark &)> &sink);
+    // The timeline went live (with this presentation delay) or left it.
+    void setLive(bool live, qint64 delayNs);
+    // Replay: GUI thread.
+    void follow(const rec::CameraMark &mark, qint64 playheadNs, double rate, bool playing, qint64 wallNs);
 
     bool available() const { return !m_feeds.isEmpty(); }
     bool enabled() const { return m_enabled; }

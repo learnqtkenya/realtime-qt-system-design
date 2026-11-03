@@ -3,3 +3,4 @@ build/
 *.user
 compile_commands.json
 __pycache__/
+*.qprec

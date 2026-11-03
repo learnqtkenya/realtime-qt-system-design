@@ -9,11 +9,14 @@
 #include "LidarPipeline.h"
 #include "Scene.h"
 #include "Selection.h"
+#include "Timeline.h"
 #include "TrackListModel.h"
 #include "qp/AppOptions.h"
 #include "qp/SensorSimulator.h"
 
 #include <QGuiApplication>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QLoggingCategory>
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
@@ -66,7 +69,10 @@ int main(int argc, char *argv[])
     opts->applyGraphicsApi();
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
-    const qp::Workload requested = opts->workload();
+    qp::Workload requested = opts->workload();
+    // From step 4 on, every frame is its own allocation, as from a real sensor.
+    requested.freshClouds = opts->extra(QStringLiteral("freshClouds"), true).toBool();
+    requested.lidarDelayMs = opts->extra(QStringLiteral("lidarDelayMs"), 0).toDouble();
     FrameStore store(requested.sensors);
     LidarPipeline pipeline(requested.sensors, LidarPipeline::Policy::DropOldest, 1, 4);
     LidarMailbox mailbox(requested.sensors);
@@ -85,22 +91,109 @@ int main(int argc, char *argv[])
     lab.setViewMode(opts->extra(QStringLiteral("view"), QStringLiteral("top")).toString());
     lab.setLodEnabled(opts->extra(QStringLiteral("lod"), true).toBool());
     Selection selection(&store);
-    Cameras cameras(QCoreApplication::applicationDirPath() + QStringLiteral("/../media"), &hub, decoder);
+    Cameras cameras(opts->extra(QStringLiteral("mediaDir"), QCoreApplication::applicationDirPath() + QStringLiteral("/../media"))
+                        .toString(),
+                    &hub, decoder);
     cameras.setPath(opts->extra(QStringLiteral("cameraPath"), QStringLiteral("forward")).toString());
     cameras.setSync(opts->extra(QStringLiteral("cameraSync"), QStringLiteral("latest")).toString());
     // Queued from the simulator thread: aligned cameras re-pick when the lidar clock moves.
     QObject::connect(&mailbox, &LidarMailbox::changed, &cameras, &Cameras::lidarAdvanced, Qt::QueuedConnection);
+
+    Timeline::Options timelineOptions;
+    timelineOptions.historyBytes = qint64(opts->extra(QStringLiteral("historyMb"), 1000).toDouble() * 1e6);
+    timelineOptions.shape = opts->extra(QStringLiteral("historyShape")).toString() == QLatin1String("int16")
+                                ? History::Shape::Int16
+                                : History::Shape::Shared;
+    timelineOptions.recordDir = QCoreApplication::applicationDirPath() + QStringLiteral("/../recordings");
+    const QString recordEncoding = opts->extra(QStringLiteral("recordEncoding"), QStringLiteral("int16planar")).toString();
+    timelineOptions.writer.lidar = recordEncoding == QLatin1String("float32") ? rec::LidarEncoding::Float32
+                                   : recordEncoding == QLatin1String("int16") ? rec::LidarEncoding::Int16
+                                                                              : rec::LidarEncoding::Int16Planar;
+    timelineOptions.writer.zstdLevel = opts->extra(QStringLiteral("recordZstd"), 1).toInt();
+    timelineOptions.writer.separateSmall = opts->extra(QStringLiteral("recordSeparate"), true).toBool();
+    timelineOptions.coldReads = opts->extra(QStringLiteral("coldReads"), false).toBool();
+    Presenter::Sinks sinks;
+    sinks.lidar = [&hub](const qp::SensorFrame &f) { hub.submit(f); };
+    sinks.tracks = [&store](const qp::TrackSetPtr &t) {
+        QMetaObject::invokeMethod(&store, [&store, t] { store.setTracks(t); }, Qt::QueuedConnection);
+    };
+    sinks.events = [&store, &events](const qp::EventBatchPtr &b, bool reset) {
+        if (reset)
+            QMetaObject::invokeMethod(&events, [&events, b] { events.replaceAll(*b); }, Qt::QueuedConnection);
+        else
+            QMetaObject::invokeMethod(&store, [&store, b] { store.addEvents(b); }, Qt::QueuedConnection);
+    };
+    sinks.camera = [&cameras](const rec::CameraMark &m, qint64 t, double rate, bool playing, qint64 wall) {
+        QMetaObject::invokeMethod(
+            &cameras, [&cameras, m, t, rate, playing, wall] { cameras.follow(m, t, rate, playing, wall); },
+            Qt::QueuedConnection);
+    };
+    Timeline timeline(sinks, timelineOptions);
+    timeline.setDelayMs(opts->extra(QStringLiteral("delayMs"), 0).toInt());
+    cameras.setMarkSink([&timeline](const rec::CameraMark &m) { timeline.ingestCameraMark(m); });
+    QObject::connect(&timeline, &Timeline::stateChanged, &cameras, [&timeline, &cameras] {
+        cameras.setLive(timeline.mode() == QLatin1String("live") && !timeline.replayingFile(),
+                        qint64(timeline.delayMs()) * 1'000'000);
+    });
+    cameras.setLive(true, qint64(timeline.delayMs()) * 1'000'000);
+    {
+        QJsonObject info;
+        info["app"] = QStringLiteral("viewer");
+        info["workload"] = QJsonObject::fromVariantMap(opts->workloadMap());
+        QJsonArray cams;
+        for (CameraFeed *f : cameras.feeds())
+            cams.append(QStringLiteral("cam%1.mp4").arg(f->index()));
+        info["cameras"] = cams;
+        timeline.setRecordingInfo(info);
+    }
 
     std::unique_ptr<qp::SensorSimulator> sim;
     if (!opts->noSim()) {
         sim = std::make_unique<qp::SensorSimulator>(lab.workload());
         QObject::connect(
             sim.get(), &qp::SensorSimulator::lidarFrame, &hub,
-            [&hub](const qp::SensorFrame &f) { hub.submit(f); }, Qt::DirectConnection);
-        QObject::connect(sim.get(), &qp::SensorSimulator::trackSet, &store, &FrameStore::setTracks);
-        QObject::connect(sim.get(), &qp::SensorSimulator::eventBatch, &store, &FrameStore::addEvents);
+            [&timeline](const qp::SensorFrame &f) { timeline.ingestLidar(f); }, Qt::DirectConnection);
+        QObject::connect(
+            sim.get(), &qp::SensorSimulator::trackSet, &store,
+            [&timeline](const qp::TrackSetPtr &t) { timeline.ingestTracks(t); }, Qt::DirectConnection);
+        QObject::connect(
+            sim.get(), &qp::SensorSimulator::eventBatch, &store,
+            [&timeline](const qp::EventBatchPtr &b) { timeline.ingestEvents(b); }, Qt::DirectConnection);
         lab.setSimulator(sim.get());
         sim->start();
+    }
+    // --set record=1 [--set recordStopAt=<s>] [--set recordPath=<file>]: record from the start.
+    if (opts->extra(QStringLiteral("record"), false).toBool()) {
+        timeline.startRecording(opts->extra(QStringLiteral("recordPath")).toString());
+        if (const double stopAt = opts->extra(QStringLiteral("recordStopAt"), 0).toDouble(); stopAt > 0)
+            QTimer::singleShot(int(stopAt * 1000), &timeline, [&timeline] { timeline.stopRecording(); });
+    }
+    // --set replay=<file> [--set replayRate=<x>]: open a recording and play it, looping.
+    if (const QString replay = opts->extra(QStringLiteral("replay")).toString(); !replay.isEmpty()) {
+        timeline.setRate(opts->extra(QStringLiteral("replayRate"), 1).toDouble());
+        const bool autoplay = opts->extra(QStringLiteral("replayPlay"), true).toBool();
+        QObject::connect(&timeline, &Timeline::fileOpened, &timeline, [&timeline, autoplay](bool ok) {
+            if (ok && autoplay)
+                timeline.play();
+        });
+        QObject::connect(&timeline, &Timeline::stateChanged, &timeline, [&timeline, autoplay] {
+            if (autoplay && timeline.replayingFile() && timeline.mode() == QLatin1String("paused")
+                && timeline.position() >= timeline.length() - 0.05) {
+                timeline.seek(0);
+                timeline.play();
+            }
+        });
+        timeline.openRecording(replay);
+    }
+    // --set seekCycle=<s>: pause, then seek to a random point every <s> seconds (seek-to-photon).
+    std::unique_ptr<QTimer> seekCycle;
+    if (const double every = opts->extra(QStringLiteral("seekCycle"), 0).toDouble(); every > 0) {
+        seekCycle = std::make_unique<QTimer>();
+        QObject::connect(seekCycle.get(), &QTimer::timeout, &timeline, [&timeline] {
+            if (timeline.length() > 1)
+                timeline.seek(double(std::rand() % 10'000) / 10'000 * timeline.length());
+        });
+        QTimer::singleShot(4000, seekCycle.get(), [&seekCycle, every] { seekCycle->start(int(every * 1000)); });
     }
     if (const double cycle = opts->extra(QStringLiteral("cycle"), 0).toDouble(); cycle > 0)
         lab.startCycle(cycle, opts->extra(QStringLiteral("cycleSet")).toString().split(u',', Qt::SkipEmptyParts));
@@ -115,6 +208,7 @@ int main(int argc, char *argv[])
     QJSEngine::setObjectOwnership(&lab, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&selection, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&cameras, QJSEngine::CppOwnership);
+    QJSEngine::setObjectOwnership(&timeline, QJSEngine::CppOwnership);
 
     QQmlApplicationEngine engine;
     QObject::connect(
@@ -124,6 +218,7 @@ int main(int argc, char *argv[])
     engine.setExternalSingletonInstance("Viewer", "Lab", &lab);
     engine.setExternalSingletonInstance("Viewer", "Selection", &selection);
     engine.setExternalSingletonInstance("Viewer", "Cameras", &cameras);
+    engine.setExternalSingletonInstance("Viewer", "Timeline", &timeline);
     engine.loadFromModule("Viewer", "Main");
     // Started after the window exists, so the panels have their sinks.
     cameras.setEnabled(opts->extra(QStringLiteral("cameras"), true).toBool());
@@ -138,6 +233,15 @@ int main(int argc, char *argv[])
     if (wantsRobot && !viewport) {
         QTextStream(stderr) << "--set robot=" << robotMode << ": viewport not found\n";
         return 3;
+    }
+    if (robotMode == QLatin1String("scrub")) {
+        auto *bar = window ? window->findChild<QQuickItem *>(QStringLiteral("scrubBar")) : nullptr;
+        if (!bar) {
+            QTextStream(stderr) << "--set robot=scrub: scrub bar not found\n";
+            return 3;
+        }
+        const QPointF centre = bar->mapToScene(QPointF(bar->width() / 2, bar->height() / 2));
+        robot = std::make_unique<InputRobot>(window, InputRobot::Mode::Scrub, centre, nullptr, bar->width() * 0.45);
     }
     if (wantsRobot) {
         const QPointF centre = viewport->mapToScene(QPointF(viewport->width() / 2, viewport->height() / 2));
@@ -154,6 +258,7 @@ int main(int argc, char *argv[])
     }
     const int rc = app.exec();
 
+    cameras.setMarkSink({}); // the timeline goes before the cameras
     pipeline.shutdown();
     if (sim)
         sim->stop();

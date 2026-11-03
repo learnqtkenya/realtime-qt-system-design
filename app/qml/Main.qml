@@ -42,6 +42,27 @@ ApplicationWindow {
         target: frameMonitor
     }
 
+    Shortcut {
+        sequence: "Space"
+        onActivated: Timeline.togglePlay()
+    }
+    Shortcut {
+        sequence: "Left"
+        onActivated: Timeline.step(-1)
+    }
+    Shortcut {
+        sequence: "Right"
+        onActivated: Timeline.step(1)
+    }
+    Shortcut {
+        sequence: "L"
+        onActivated: Timeline.goLive()
+    }
+    Shortcut {
+        sequence: "R"
+        onActivated: Timeline.toggleRecording()
+    }
+
     Viewport {
         x: 0
         y: 0

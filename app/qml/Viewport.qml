@@ -202,8 +202,16 @@ Item {
 
     CameraStrip {
         anchors.left: parent.left
-        anchors.bottom: parent.bottom
+        anchors.bottom: timelineBar.top
         anchors.margins: 8
+    }
+
+    TimelineBar {
+        id: timelineBar
+
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
     }
 
     Hud {

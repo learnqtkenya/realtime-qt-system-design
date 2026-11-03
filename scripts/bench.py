@@ -96,6 +96,10 @@ def row(report, stages, rates=()):
         "gpu p50": report.get("gpuMs", {}).get("p50") or None,
         "gpu p99": report.get("gpuMs", {}).get("p99") or None,
         "proc cpu%": report["processCpuPercent"]["mean"],
+        "rss max": report.get("rssMb", {}).get("max"),
+        "cam lat p50": report.get("cameraLatencyMs", {}).get("p50") or None,
+        "|skew| p50": report.get("cameraAbsSkewMs", {}).get("p50") or None,
+        "|skew| p99": report.get("cameraAbsSkewMs", {}).get("p99") or None,
         # Same work in every run (50-object track rebuild): a slower value means a slower machine.
         "canary ms": report.get("stages", {}).get("tracks_rebuild_ms", {}).get("p50"),
     }

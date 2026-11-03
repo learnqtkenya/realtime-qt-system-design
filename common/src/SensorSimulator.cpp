@@ -203,8 +203,9 @@ private:
         SensorFrame f;
         f.sensorId = sensor;
         f.seq = m_lidarSeq[size_t(sensor)]++;
-        f.captureNs = nowNs();
-        f.cloud = m_pool[size_t(sensor)][m_w.still ? 0 : f.seq % kPoolVariants];
+        f.captureNs = nowNs() - int64_t(m_w.lidarDelayMs * 1e6);
+        const auto &pooled = m_pool[size_t(sensor)][m_w.still ? 0 : f.seq % kPoolVariants];
+        f.cloud = m_w.freshClouds ? std::make_shared<const PointCloud>(*pooled) : pooled;
         m_owner->m_lidarEmitted.fetch_add(1, std::memory_order_relaxed);
         emit m_owner->lidarFrame(f);
     }

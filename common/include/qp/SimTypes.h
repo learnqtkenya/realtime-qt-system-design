@@ -27,6 +27,11 @@ struct Workload
     int eventsPerSecond = 50;
     uint32_t seed = 1;
     bool still = false; // same cloud every frame, tracks do not move
+    // Each frame gets its own allocation, as from a real sensor. Off: frames share a small pool,
+    // so anything that keeps frames looks free.
+    bool freshClouds = false;
+    // Time from capture to emission, as if the lidar had a processing pipeline.
+    double lidarDelayMs = 0;
 
     double pointsPerSecond() const { return sensors * double(pointsPerFrame) * lidarRateHz; }
 };

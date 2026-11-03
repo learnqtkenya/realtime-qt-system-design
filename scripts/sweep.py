@@ -141,8 +141,75 @@ RATES["step-02"] = ["submitted", "uploaded"]
 MODULES["step-03"] = ("app/viewer", MODULES["step-02"][1] + ["camera_toimage_ms", "camera_arrival_ms"])
 MODULE_ENV["step-03"] = {"QSG_RHI_PROFILE": "1"}
 RATES["step-03"] = ["camera_decoded", "camera_presented"]
+RECORDINGS = bench.BUILD / "recordings" / "step-04"
+
+
+def _step04_series():
+    nominal = ["--points", 150_000, "--rate", 10, "--objects", 50, "--events", 50, "--set", "view=orbit"]
+    peak = ["--points", 300_000, "--rate", 20, "--objects", 50, "--events", 50, "--set", "view=orbit"]
+    cams = ["--set", "cameras=1", "--set", "hwdecode=1"]
+    no_cams = ["--set", "cameras=0"]
+
+    def setting(**kv):
+        return [a for k, v in kv.items() for a in ("--set", f"{k}={v}")]
+
+    s = {}
+    # Shared clock against latest-frame, with equal pipelines and with 150 ms of lidar processing.
+    sync = {"lag0-latest": {}, "lag0-clock100": {"delayMs": 100},
+            "lag150-latest": {"lidarDelayMs": 150}, "lag150-clock200": {"lidarDelayMs": 150, "delayMs": 200},
+            "lag150-clock120": {"lidarDelayMs": 150, "delayMs": 120}}
+    s["sync"] = [(f"sync-{c}-r{n}", [*nominal, *cams, *setting(**kv)], 20) for n in (1, 2, 3) for c, kv in sync.items()]
+    # What keeping the last second costs: 60 s, so a 1 GB budget fills (14 s shared, 28 s int16).
+    hist = {"shared-pool-none": {"freshClouds": 0, "historyMb": 0}, "fresh-none": {"historyMb": 0},
+            "fresh-shared-1000": {"historyMb": 1000}, "fresh-int16-1000": {"historyMb": 1000, "historyShape": "int16"},
+            "shared-pool-shared-1000": {"freshClouds": 0, "historyMb": 1000}}
+    s["history"] = [(f"history-{c}", [*nominal, *no_cams, *setting(**kv)], 60) for c, kv in hist.items()]
+    # Recording: stopped at 22 s (stopping syncs everything to disk, which can take seconds at peak),
+    # so the writer's totals reach the report at 28 s.
+    rec = {"nominal-int16planar-zstd1": ([*nominal, *no_cams], {}),
+           "nominal-int16planar-raw": ([*nominal, *no_cams], {"recordZstd": 0}),
+           "nominal-float32-raw": ([*nominal, *no_cams], {"recordEncoding": "float32", "recordZstd": 0}),
+           "peak-int16planar-zstd1": ([*peak, *no_cams], {}),
+           "peak-float32-raw": ([*peak, *no_cams], {"recordEncoding": "float32", "recordZstd": 0}),
+           # Arrival order is not capture order: cameras arrive after decoding, lidar after processing.
+           "nominal-cameras-lag150": ([*nominal, *cams], {"lidarDelayMs": 150})}
+    s["record"] = [(f"record-{c}", [*load, *setting(record=1, recordStopAt=22,
+                                                    recordPath=RECORDINGS / f"{c}.qprec", **kv)], 25)
+                   for c, (load, kv) in rec.items()]
+    source = RECORDINGS / "replay-source.qprec"
+    s["replay"] = [
+        ("replay-source", [*nominal, *cams, *setting(record=1, recordStopAt=26.5, recordPath=source)], 25),
+        *[(f"replay-file-{r}x-r{n}", [*nominal, *cams, *setting(replay=source, replayRate=r)], 20)
+          for n in (1, 2) for r in (1, 4)],
+        *[(f"seek-memory-r{n}", [*nominal, *cams, *setting(seekCycle=0.5)], 20) for n in (1, 2)],
+        *[(f"seek-memory-gop10-r{n}", [*nominal, *cams, *setting(seekCycle=0.5, mediaDir=bench.BUILD / "media-gop10")], 20)
+          for n in (1, 2)],
+        *[(f"seek-file-warm-r{n}", [*nominal, *cams, *setting(replay=source, replayPlay=0, seekCycle=0.5)], 20)
+          for n in (1, 2)],
+        *[(f"seek-file-cold-r{n}", [*nominal, *cams, *setting(replay=source, replayPlay=0, seekCycle=0.5, coldReads=1)], 20)
+          for n in (1, 2)],
+        *[(f"scrub-memory-r{n}", [*nominal, *cams, *setting(robot="scrub")], 20) for n in (1, 2)],
+        # The first layout: lidar and the small streams share chunks.
+        ("replay-source-mixed", [*nominal, *cams, *setting(record=1, recordStopAt=26.5, recordSeparate=0,
+                                                           recordPath=RECORDINGS / "replay-source-mixed.qprec")], 25),
+        *[(f"seek-file-{c}-mixed-r{n}", [*nominal, *cams, *setting(replay=RECORDINGS / "replay-source-mixed.qprec",
+                                                                   replayPlay=0, seekCycle=0.5, coldReads=int(c == "cold"))], 20)
+          for n in (1, 2) for c in ("warm", "cold")],
+    ]
+    s["soak"] = [("soak-history-record-300s", [*nominal, *cams, *setting(record=1, recordStopAt=301.5,
+                                                                         recordPath=RECORDINGS / "soak.qprec")], 300),
+                 ("soak-replay-300s", [*nominal, *cams, *setting(replay=source)], 300)]
+    # The 300 s replay soak rose 11 MB/min after warm-up: long enough to tell a plateau from a leak?
+    s["soak-long"] = [("soak-replay-900s", [*nominal, *cams, *setting(replay=source)], 900)]
+    return s
+
+
+MODULES["step-04"] = ("app/viewer", ["history_add_ms", "seek_ms", "present_late_ms", "live_late_ms",
+                                     "record_lidar_encode_ms", "record_chunk_write_ms", "camera_seek_ms"])
+MODULE_ENV["step-04"] = {"QSG_RHI_PROFILE": "1"}
+RATES["step-04"] = ["camera_decoded", "camera_presented"]
 MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series(), "step-02": _step02_series(),
-                 "step-03": _step03_series()}
+                 "step-03": _step03_series(), "step-04": _step04_series()}
 
 EXTRA_SERIES = {
     "m03": {

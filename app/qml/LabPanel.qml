@@ -198,6 +198,66 @@ Rectangle {
             }
 
             SectionTitle {
+                text: "Time"
+            }
+            Caption {
+                text: "Presentation delay: " + Timeline.delayMs + " ms (every stream shown at now − delay)"
+            }
+            LabSlider {
+                from: 0
+                to: 400
+                stepSize: 10
+                snapMode: Slider.SnapAlways
+                value: Timeline.delayMs
+                onMoved: Timeline.delayMs = value
+            }
+            Caption {
+                text: "Simulated lidar processing: " + Lab.lidarDelayMs + " ms"
+            }
+            LabSlider {
+                from: 0
+                to: 300
+                stepSize: 10
+                snapMode: Slider.SnapAlways
+                value: Lab.lidarDelayMs
+                onMoved: Lab.lidarDelayMs = value
+            }
+            Caption {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: "History in memory: " + Timeline.historyMb.toFixed(0) + " of " + Timeline.historyBudgetMb.toFixed(0) + " MB (" + Timeline.historyShape + "), " + Timeline.historySeconds.toFixed(1) + " s"
+            }
+            Caption {
+                Layout.fillWidth: true
+                visible: Timeline.status.length > 0
+                wrapMode: Text.WordWrap
+                color: "#C4B5FD"
+                text: Timeline.status
+            }
+            Repeater {
+                model: Timeline.recordings.slice(0, 4)
+
+                delegate: RowLayout {
+                    id: recordingRow
+
+                    required property var modelData
+
+                    Layout.fillWidth: true
+
+                    Caption {
+                        Layout.fillWidth: true
+                        elide: Text.ElideMiddle
+                        text: recordingRow.modelData.name + "  " + recordingRow.modelData.mb.toFixed(0) + " MB"
+                    }
+                    Button {
+                        text: "Open"
+                        focusPolicy: Qt.NoFocus
+                        onClicked: Timeline.openRecording(recordingRow.modelData.path)
+                    }
+                }
+            }
+
+            SectionTitle {
                 text: Lab.viewMode === "orbit" ? "Renderer (3D orbit always uses Quick 3D)" : "Renderer"
             }
             ComboBox {

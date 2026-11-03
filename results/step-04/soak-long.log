@@ -1,0 +1,2 @@
+01:49:00 [soak-replay-900s] --bench --warmup 3 --duration 900 --label soak-replay-900s --out /home/user/Documents/Qt/QtQMLPro/results/step-04/raw/soak-replay-900s.json --points 150000 --rate 10 --objects 50 --events 50 --set view=orbit --set cameras=1 --set hwdecode=1 --set replay=/home/user/Documents/Qt/QtQMLPro/build/release/recordings/step-04/replay-source.qprec
+wrote /home/user/Documents/Qt/QtQMLPro/results/step-04/summary.md

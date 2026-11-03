@@ -3,6 +3,7 @@
 #include <QtTest>
 
 #include <cmath>
+#include <set>
 
 class TstSimulator : public QObject
 {
@@ -162,6 +163,54 @@ private slots:
         QVERIFY(lidar.count() > 20);
         for (const auto &args : lidar)
             QCOMPARE(args.at(0).value<qp::SensorFrame>().cloud->count(), w.pointsPerFrame);
+    }
+
+    void freshCloudsAreOwnAllocations()
+    {
+        qp::Workload w;
+        w.sensors = 1;
+        w.pointsPerFrame = 200;
+        w.lidarRateHz = 50;
+        for (const bool fresh : {false, true}) {
+            w.freshClouds = fresh;
+            qp::SensorSimulator sim(w);
+            QSignalSpy lidar(&sim, &qp::SensorSimulator::lidarFrame);
+            sim.start();
+            QTRY_VERIFY_WITH_TIMEOUT(lidar.count() >= 10, 2000);
+            sim.stop();
+            std::set<const qp::PointCloud *> distinct;
+            for (const auto &args : lidar)
+                distinct.insert(args.at(0).value<qp::SensorFrame>().cloud.get());
+            // The pool has four variants per sensor.
+            if (fresh)
+                QCOMPARE(distinct.size(), size_t(lidar.count()));
+            else
+                QVERIFY(distinct.size() <= 4);
+            const auto first = lidar.first().at(0).value<qp::SensorFrame>();
+            const auto fifth = lidar.at(4).at(0).value<qp::SensorFrame>();
+            QVERIFY(first.cloud->xyz == fifth.cloud->xyz); // same content either way
+        }
+    }
+
+    void lidarDelayBackdatesCapture()
+    {
+        qp::Workload w;
+        w.sensors = 1;
+        w.pointsPerFrame = 100;
+        w.lidarRateHz = 50;
+        w.lidarDelayMs = 150;
+        qp::SensorSimulator sim(w);
+        qint64 worst = 0, best = INT64_MAX;
+        connect(&sim, &qp::SensorSimulator::lidarFrame, this, [&](const qp::SensorFrame &f) {
+            const qint64 age = qp::nowNs() - f.captureNs;
+            worst = std::max(worst, age);
+            best = std::min(best, age);
+        }, Qt::DirectConnection);
+        sim.start();
+        QTest::qWait(300);
+        sim.stop();
+        QVERIFY(best >= 150'000'000);
+        QVERIFY2(worst < 160'000'000, qPrintable(QString::number(worst)));
     }
 
     void captureTimestampsAreMonotonic()

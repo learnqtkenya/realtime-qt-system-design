@@ -39,3 +39,10 @@ void EventLogModel::appendBatch(const qp::EventBatch &batch)
     endResetModel();
     qp::StageStats::instance().add(QStringLiteral("event_reset_ms"), double(qp::nowNs() - t0) / 1e6);
 }
+
+void EventLogModel::replaceAll(const qp::EventBatch &batch)
+{
+    beginResetModel();
+    m_events.assign(batch.begin(), batch.end());
+    endResetModel();
+}

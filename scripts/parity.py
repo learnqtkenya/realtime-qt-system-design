@@ -30,6 +30,23 @@ MODES = {
                 variants=[(v, VIEWER, ["--variant", v]) for v in ("canvas", "painted", "sg", "rhi", "quick3d")],
                 region=(0, 170, 1220, 900)),  # left of the lab panel, below the HUD
 }
+# Step 4: a replayed recording against the live view it was recorded from (cameras off; the
+# region stops above the timeline bar).
+RECORDINGS = bench.ROOT / "results" / "step-04" / "parity"
+LIVE = ["--variant", "rhi", "--set", "cameras=0"]
+MODES["replay"] = dict(out=RECORDINGS,
+                       reference=("live", VIEWER, LIVE),
+                       # The live simulator runs a different scene (seed 2) during replay, so a replay
+                       # that leaked live data would fail; "live-seed2" is that failure, expected.
+                       variants=[(f"replay-{enc}", VIEWER, [*LIVE, "--seed", "2",
+                                                            "--set", f"replay={RECORDINGS / (enc + '.qprec')}"])
+                                 for enc in ("float32", "int16planar")] + [("live-seed2 (must fail)", VIEWER,
+                                                                             [*LIVE, "--seed", "2"])],
+                       region=(0, 170, 1220, 850),
+                       prepare=[(VIEWER, [*LIVE, "--set", "record=1", "--set", "recordStopAt=2",
+                                          "--set", f"recordEncoding={enc}", "--set", f"recordZstd={int(enc != 'float32')}",
+                                          "--set", f"recordPath={RECORDINGS / (enc + '.qprec')}"])
+                                for enc in ("float32", "int16planar")])
 OUT = REFERENCE = VARIANTS = REGION = None
 SENSOR_RGB = [(0x38, 0xBD, 0xF8), (0x34, 0xD3, 0x99), (0xFB, 0xBF, 0x24), (0xF4, 0x72, 0xB6)]
 PASS = 0.98
@@ -92,6 +109,10 @@ def main():
     mode = MODES[sys.argv[1] if len(sys.argv) > 1 else "exp"]
     OUT, REFERENCE, VARIANTS, REGION = mode["out"], mode["reference"], mode["variants"], mode["region"]
     OUT.mkdir(parents=True, exist_ok=True)
+    for app, args in mode.get("prepare", []):
+        # Record a few seconds of the frozen scene; --grab makes the app exit afterwards.
+        subprocess.run([str(app), *SCENE, *args, "--grab", str(OUT / "prepare.png")],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
     rows, failures = [], []
     for api in APIS:
         ref_path, ref_err = grab(REFERENCE[0], REFERENCE[1], REFERENCE[2], api)
@@ -113,7 +134,7 @@ def main():
             }
             row["pass"] = (row["precision"] >= PASS and row["recall"] >= PASS
                            and 0.9 <= row["white ratio"] <= 1.1 and row["stderr"] == 0)
-            if not row["pass"]:
+            if row["pass"] == name.endswith("(must fail)"):
                 failures.append(f"{name}/{api}")
             rows.append(row)
             print({k: (round(v, 3) if isinstance(v, float) else v) for k, v in row.items()}, flush=True)

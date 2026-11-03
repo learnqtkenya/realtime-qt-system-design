@@ -174,6 +174,15 @@ void Lab::setEventsPerSecond(int n)
     workloadEdited();
 }
 
+void Lab::setLidarDelayMs(int ms)
+{
+    ms = std::clamp(ms, 0, 1000);
+    if (ms == lidarDelayMs())
+        return;
+    m_workload.lidarDelayMs = ms;
+    workloadEdited();
+}
+
 void Lab::resetToNominal()
 {
     m_workload.pointsPerFrame = std::min(150'000, maxPoints());
