@@ -77,6 +77,28 @@ Rectangle {
         }
     }
 
+    component LabCheck: CheckBox {
+        id: check
+
+        indicator: Rectangle {
+            x: check.leftPadding
+            y: (check.height - height) / 2
+            implicitWidth: 16
+            implicitHeight: 16
+            radius: 3
+            color: check.checked ? "#38BDF8" : "transparent"
+            border.color: check.checked ? "#38BDF8" : "#94A3B8"
+            opacity: check.enabled ? 1 : 0.4
+        }
+        contentItem: Label {
+            leftPadding: check.indicator.width + 8
+            text: check.text
+            font.pixelSize: 12
+            color: check.enabled ? "#E2E8F0" : "#64748B"
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
+
     component SectionTitle: Label {
         font.pixelSize: 13
         font.bold: true
@@ -84,229 +106,273 @@ Rectangle {
         Layout.topMargin: 6
     }
 
-    ColumnLayout {
+    Flickable {
+        id: flick
+
         anchors.fill: parent
         anchors.margins: 12
-        spacing: 4
+        contentHeight: column.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
 
-        Label {
-            text: "Lab"
-            font.pixelSize: 20
-            font.bold: true
-            color: "#F8FAFC"
-        }
+        ColumnLayout {
+            id: column
 
-        SectionTitle {
-            text: "View"
-        }
-        RowLayout {
-            Layout.fillWidth: true
+            width: flick.width
+            spacing: 4
 
-            ToggleButton {
-                text: "Top-down"
-                checked: Lab.viewMode === "top"
-                onClicked: Lab.viewMode = "top"
+            Label {
+                text: "Lab"
+                font.pixelSize: 20
+                font.bold: true
+                color: "#F8FAFC"
             }
-            ToggleButton {
-                text: "3D orbit"
-                checked: Lab.viewMode === "orbit"
-                onClicked: Lab.viewMode = "orbit"
+
+            SectionTitle {
+                text: "View"
             }
-        }
-        CheckBox {
-            id: lod
+            RowLayout {
+                Layout.fillWidth: true
 
-            visible: Lab.viewMode === "orbit"
-            text: "Level of detail (thin points when far)"
-            checked: Lab.lodEnabled
-            onToggled: Lab.lodEnabled = checked
-            indicator: Rectangle {
-                x: lod.leftPadding
-                y: (lod.height - height) / 2
-                implicitWidth: 16
-                implicitHeight: 16
-                radius: 3
-                color: lod.checked ? "#38BDF8" : "transparent"
-                border.color: lod.checked ? "#38BDF8" : "#94A3B8"
-            }
-            contentItem: Label {
-                leftPadding: lod.indicator.width + 8
-                text: lod.text
-                font.pixelSize: 12
-                color: "#E2E8F0"
-                verticalAlignment: Text.AlignVCenter
-            }
-        }
-
-        SectionTitle {
-            text: Lab.viewMode === "orbit" ? "Renderer (3D orbit always uses Quick 3D)" : "Renderer"
-        }
-        ComboBox {
-            id: rendererBox
-
-            enabled: Lab.viewMode === "top"
-            Layout.fillWidth: true
-            model: Lab.renderers
-            textRole: "name"
-            valueRole: "id"
-            currentIndex: Lab.renderers.findIndex(r => r.id === Lab.renderer)
-            onActivated: index => Lab.renderer = Lab.renderers[index].id
-        }
-        Caption {
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            text: rendererBox.currentIndex >= 0 ? Lab.renderers[rendererBox.currentIndex].detail : ""
-        }
-
-        SectionTitle {
-            text: "Load"
-        }
-        Caption {
-            text: "Points per sensor: " + Lab.pointsPerSensor.toLocaleString(Qt.locale("en_US"), "f", 0) + "  (max " + Lab.maxPoints.toLocaleString(Qt.locale("en_US"), "f", 0) + " at this rate)"
-        }
-        LabSlider {
-            from: 0
-            to: panel.toSlider(Lab.maxPoints)
-            value: panel.toSlider(Lab.pointsPerSensor)
-            onMoved: Lab.pointsPerSensor = panel.fromSlider(value)
-        }
-        Caption {
-            text: "Sensor rate: " + Lab.rateHz + " Hz"
-        }
-        LabSlider {
-            from: 5
-            to: 30
-            stepSize: 5
-            snapMode: Slider.SnapAlways
-            value: Lab.rateHz
-            onMoved: Lab.rateHz = value
-        }
-        Caption {
-            text: "Tracked objects: " + Lab.objects
-        }
-        LabSlider {
-            from: 0
-            to: 800
-            stepSize: 10
-            snapMode: Slider.SnapAlways
-            value: Lab.objects
-            onMoved: Lab.objects = value
-        }
-        Caption {
-            text: "Events per second: " + Lab.eventsPerSecond
-        }
-        LabSlider {
-            from: 0
-            to: 2000
-            stepSize: 50
-            snapMode: Slider.SnapAlways
-            value: Lab.eventsPerSecond
-            onMoved: Lab.eventsPerSecond = value
-        }
-        Button {
-            text: "Reset to nominal"
-            onClicked: Lab.resetToNominal()
-        }
-
-        // Same height with charts off, so the event log (whose cost grows with visible rows) stays the same size.
-        SectionTitle {
-            text: "Selected object"
-        }
-        Caption {
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            color: Selection.trackId >= 0 ? "#E2E8F0" : "#94A3B8"
-            text: {
-                const i = Selection.info;
-                if (Selection.trackId < 0 || i.id === undefined)
-                    return "Click an object in the view to inspect it.";
-                return "#" + i.id + "  " + i.cls + "\n" + i.speed.toFixed(1) + " m/s, heading " + i.heading.toFixed(0) + "°\n" + "at (" + i.x.toFixed(1) + ", " + i.y.toFixed(1) + ") m, " + i.distance.toFixed(1) + " m away\n" + i.length.toFixed(1) + " × " + i.width.toFixed(1) + " × " + i.height.toFixed(1) + " m";
-            }
-        }
-
-        Loader {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 290
-            active: Lab.chartsEnabled
-
-            sourceComponent: ColumnLayout {
-                spacing: 6
-
-                SectionTitle {
-                    text: "Live (last 60 s)"
+                ToggleButton {
+                    text: "Top-down"
+                    checked: Lab.viewMode === "top"
+                    onClicked: Lab.viewMode = "top"
                 }
-                MetricChart {
-                    Layout.fillWidth: true
-                    title: "Frame time p99"
-                    values: panel.monitor.historyFrameP99
-                    threshold: 20
-                }
-                MetricChart {
-                    Layout.fillWidth: true
-                    title: "GUI thread lag p99"
-                    values: panel.monitor.historyLagP99
-                    threshold: 4
-                    color: "#34D399"
-                }
-                MetricChart {
-                    Layout.fillWidth: true
-                    title: "Sensor-to-pixel latency"
-                    values: panel.monitor.historyLatency
-                    threshold: 100
-                    decimals: 0
-                    color: "#FBBF24"
-                }
-                MetricChart {
-                    Layout.fillWidth: true
-                    title: "Input to photon"
-                    values: panel.monitor.historyInput
-                    threshold: 50
-                    decimals: 0
-                    color: "#7DD3FC"
-                }
-                MetricChart {
-                    Layout.fillWidth: true
-                    title: "Process CPU"
-                    values: panel.monitor.historyCpu
-                    unit: "%"
-                    decimals: 0
-                    color: "#F472B6"
-                }
-                MetricChart {
-                    Layout.fillWidth: true
-                    title: "GPU time per frame"
-                    values: panel.monitor.historyGpu
-                    decimals: 2
-                    color: "#A78BFA"
+                ToggleButton {
+                    text: "3D orbit"
+                    checked: Lab.viewMode === "orbit"
+                    onClicked: Lab.viewMode = "orbit"
                 }
             }
-        }
+            LabCheck {
+                visible: Lab.viewMode === "orbit"
+                text: "Level of detail (thin points when far)"
+                checked: Lab.lodEnabled
+                onToggled: Lab.lodEnabled = checked
+            }
 
-        SectionTitle {
-            text: "Events"
-        }
-        ListView {
-            id: log
+            SectionTitle {
+                text: "Cameras"
+            }
+            LabCheck {
+                text: "Show four camera panels"
+                enabled: Cameras.available
+                checked: Cameras.enabled
+                onToggled: Cameras.enabled = checked
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                visible: Cameras.enabled
 
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.minimumHeight: 60
-            clip: true
-            model: Scene.events
+                ToggleButton {
+                    text: "Forward frames"
+                    checked: Cameras.path === "forward"
+                    onClicked: Cameras.path = "forward"
+                }
+                ToggleButton {
+                    text: "Convert to image"
+                    checked: Cameras.path === "image"
+                    onClicked: Cameras.path = "image"
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                visible: Cameras.enabled
 
-            onCountChanged: positionViewAtEnd()
+                ToggleButton {
+                    text: "Latest frame"
+                    checked: Cameras.sync === "latest"
+                    onClicked: Cameras.sync = "latest"
+                }
+                ToggleButton {
+                    text: "Aligned to lidar"
+                    checked: Cameras.sync === "aligned"
+                    onClicked: Cameras.sync = "aligned"
+                }
+            }
+            Caption {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: !Cameras.available ? "No test videos: run scripts/make_videos.sh" : "Decoder: " + Cameras.decoder + (Cameras.enabled && Cameras.frameInfo.length > 0 ? " · frames: " + Cameras.frameInfo : "")
+            }
 
-            delegate: Text {
-                required property int severity
-                required property string source
-                required property string message
+            SectionTitle {
+                text: Lab.viewMode === "orbit" ? "Renderer (3D orbit always uses Quick 3D)" : "Renderer"
+            }
+            ComboBox {
+                id: rendererBox
 
-                width: log.width
-                elide: Text.ElideRight
-                font.family: "monospace"
-                font.pixelSize: 11
-                color: severity === 0 ? "#94A3B8" : (severity === 1 ? "#FBBF24" : "#F87171")
-                text: source + "  " + message
+                enabled: Lab.viewMode === "top"
+                Layout.fillWidth: true
+                model: Lab.renderers
+                textRole: "name"
+                valueRole: "id"
+                currentIndex: Lab.renderers.findIndex(r => r.id === Lab.renderer)
+                onActivated: index => Lab.renderer = Lab.renderers[index].id
+            }
+            Caption {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: rendererBox.currentIndex >= 0 ? Lab.renderers[rendererBox.currentIndex].detail : ""
+            }
+
+            SectionTitle {
+                text: "Load"
+            }
+            Caption {
+                text: "Points per sensor: " + Lab.pointsPerSensor.toLocaleString(Qt.locale("en_US"), "f", 0) + "  (max " + Lab.maxPoints.toLocaleString(Qt.locale("en_US"), "f", 0) + " at this rate)"
+            }
+            LabSlider {
+                from: 0
+                to: panel.toSlider(Lab.maxPoints)
+                value: panel.toSlider(Lab.pointsPerSensor)
+                onMoved: Lab.pointsPerSensor = panel.fromSlider(value)
+            }
+            Caption {
+                text: "Sensor rate: " + Lab.rateHz + " Hz"
+            }
+            LabSlider {
+                from: 5
+                to: 30
+                stepSize: 5
+                snapMode: Slider.SnapAlways
+                value: Lab.rateHz
+                onMoved: Lab.rateHz = value
+            }
+            Caption {
+                text: "Tracked objects: " + Lab.objects
+            }
+            LabSlider {
+                from: 0
+                to: 800
+                stepSize: 10
+                snapMode: Slider.SnapAlways
+                value: Lab.objects
+                onMoved: Lab.objects = value
+            }
+            Caption {
+                text: "Events per second: " + Lab.eventsPerSecond
+            }
+            LabSlider {
+                from: 0
+                to: 2000
+                stepSize: 50
+                snapMode: Slider.SnapAlways
+                value: Lab.eventsPerSecond
+                onMoved: Lab.eventsPerSecond = value
+            }
+            Button {
+                text: "Reset to nominal"
+                onClicked: Lab.resetToNominal()
+            }
+
+            // Same height with charts off, so the event log (whose cost grows with visible rows) stays the same size.
+            SectionTitle {
+                text: "Selected object"
+            }
+            Caption {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                color: Selection.trackId >= 0 ? "#E2E8F0" : "#94A3B8"
+                text: {
+                    const i = Selection.info;
+                    if (Selection.trackId < 0 || i.id === undefined)
+                        return "Click an object in the view to inspect it.";
+                    return "#" + i.id + "  " + i.cls + "\n" + i.speed.toFixed(1) + " m/s, heading " + i.heading.toFixed(0) + "°\n" + "at (" + i.x.toFixed(1) + ", " + i.y.toFixed(1) + ") m, " + i.distance.toFixed(1) + " m away\n" + i.length.toFixed(1) + " × " + i.width.toFixed(1) + " × " + i.height.toFixed(1) + " m";
+                }
+            }
+
+            Loader {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 340
+                active: Lab.chartsEnabled
+
+                sourceComponent: ColumnLayout {
+                    spacing: 6
+
+                    SectionTitle {
+                        text: "Live (last 60 s)"
+                    }
+                    MetricChart {
+                        Layout.fillWidth: true
+                        title: "Frame time p99"
+                        values: panel.monitor.historyFrameP99
+                        threshold: 20
+                    }
+                    MetricChart {
+                        Layout.fillWidth: true
+                        title: "GUI thread lag p99"
+                        values: panel.monitor.historyLagP99
+                        threshold: 4
+                        color: "#34D399"
+                    }
+                    MetricChart {
+                        Layout.fillWidth: true
+                        title: "Sensor-to-pixel latency"
+                        values: panel.monitor.historyLatency
+                        threshold: 100
+                        decimals: 0
+                        color: "#FBBF24"
+                    }
+                    MetricChart {
+                        Layout.fillWidth: true
+                        title: "Input to photon"
+                        values: panel.monitor.historyInput
+                        threshold: 50
+                        decimals: 0
+                        color: "#7DD3FC"
+                    }
+                    MetricChart {
+                        Layout.fillWidth: true
+                        title: "Camera minus lidar time on screen"
+                        values: panel.monitor.historySkew
+                        decimals: 0
+                        color: "#FB923C"
+                    }
+                    MetricChart {
+                        Layout.fillWidth: true
+                        title: "Process CPU"
+                        values: panel.monitor.historyCpu
+                        unit: "%"
+                        decimals: 0
+                        color: "#F472B6"
+                    }
+                    MetricChart {
+                        Layout.fillWidth: true
+                        title: "GPU time per frame"
+                        values: panel.monitor.historyGpu
+                        decimals: 2
+                        color: "#A78BFA"
+                    }
+                }
+            }
+
+            SectionTitle {
+                text: "Events"
+            }
+            ListView {
+                id: log
+
+                Layout.fillWidth: true
+                Layout.preferredHeight: 150
+                clip: true
+                model: Scene.events
+
+                onCountChanged: positionViewAtEnd()
+
+                delegate: Text {
+                    required property int severity
+                    required property string source
+                    required property string message
+
+                    width: log.width
+                    elide: Text.ElideRight
+                    font.family: "monospace"
+                    font.pixelSize: 11
+                    color: severity === 0 ? "#94A3B8" : (severity === 1 ? "#FBBF24" : "#F87171")
+                    text: source + "  " + message
+                }
             }
         }
     }

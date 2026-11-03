@@ -9,6 +9,9 @@ LidarHub::LidarHub(LidarPipeline *pipeline, LidarMailbox *mailbox, QObject *pare
 
 void LidarHub::submit(const qp::SensorFrame &frame)
 {
+    int64_t cur = m_newestNs.load(std::memory_order_relaxed);
+    while (frame.captureNs > cur && !m_newestNs.compare_exchange_weak(cur, frame.captureNs)) {
+    }
     switch (m_route.load()) {
     case Route::None: break;
     case Route::Canvas: emit canvasFrame(frame); break;

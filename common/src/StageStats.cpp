@@ -26,8 +26,22 @@ QJsonObject StageStats::toJson() const
 {
     std::lock_guard lock(m_mutex);
     QJsonObject o;
-    for (const auto &[name, samples] : m_samples)
-        o[name] = samples.toJson();
+    for (const auto &[name, samples] : m_samples) {
+        QJsonObject j = samples.toJson();
+        // Trend check: a drifting quantity has different first and last quarters.
+        const std::vector<double> &v = samples.values();
+        if (v.size() >= 8) {
+            const size_t q = v.size() / 4;
+            double first = 0, last = 0;
+            for (size_t i = 0; i < q; ++i) {
+                first += v[i];
+                last += v[v.size() - q + i];
+            }
+            j["firstQuarterMean"] = first / double(q);
+            j["lastQuarterMean"] = last / double(q);
+        }
+        o[name] = j;
+    }
     return o;
 }
 

@@ -200,6 +200,12 @@ Item {
         }
     }
 
+    CameraStrip {
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.margins: 8
+    }
+
     Hud {
         x: 12
         y: 12

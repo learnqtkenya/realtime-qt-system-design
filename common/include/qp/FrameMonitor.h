@@ -20,7 +20,8 @@
 namespace qp {
 
 // Any thread. Latency is recorded at the swap of the first frame that can contain the content.
-void markContentCaptured(qint64 captureNs);
+// Channel 0 is lidar, 1 is camera; the report also gives the skew between them on screen.
+void markContentCaptured(qint64 captureNs, int channel = 0);
 
 // CPU, RSS and the benchmark run on their own threads: a stuck GUI thread must not
 // stop us measuring it.
@@ -54,6 +55,7 @@ class FrameMonitor : public QObject
     Q_PROPERTY(QList<qreal> historyGpu READ historyGpu NOTIFY snapshotChanged FINAL)
     Q_PROPERTY(int historyLength READ historyLength CONSTANT FINAL)
     Q_PROPERTY(QList<qreal> historyInput READ historyInput NOTIFY snapshotChanged FINAL)
+    Q_PROPERTY(QList<qreal> historySkew READ historySkew NOTIFY snapshotChanged FINAL)
 
 public:
     explicit FrameMonitor(QObject *parent = nullptr);
@@ -81,6 +83,7 @@ public:
     QList<qreal> historyLatency() const { return m_hist[3]; }
     QList<qreal> historyGpu() const { return m_hist[4]; }
     QList<qreal> historyInput() const { return m_hist[5]; }
+    QList<qreal> historySkew() const { return m_hist[6]; }
     int historyLength() const { return kHistoryLength; }
     double refreshHz() const { return m_refreshHz; }
     QString graphicsApi() const;
@@ -100,7 +103,7 @@ private:
     struct Series
     {
         RunningSamples frameMs, syncMs, renderMs, latencyMs, lagMs, gpuMs;
-        RunningSamples inputMs, inputDispatchMs;
+        RunningSamples inputMs, inputDispatchMs, cameraLatencyMs, cameraSkewMs, cameraAbsSkewMs;
         RunningSamples guiCpuPct, procCpuPct, rssMb;
         void clear();
     };
@@ -108,7 +111,7 @@ private:
     {
         double fps = 0, frameMean = 0, frameP99 = 0, frameMax = 0;
         double lagP99 = 0, lagMax = 0, guiCpu = 0, procCpu = 0, rss = 0;
-        double latMean = 0, latMax = 0, gpuMean = 0, inputMean = 0;
+        double latMean = 0, latMax = 0, gpuMean = 0, inputMean = 0, skewMean = 0;
         int slow = 0;
     };
 
@@ -141,10 +144,11 @@ private:
     QJsonObject m_rhiInfo;
     Snapshot m_snap;
     static constexpr int kHistoryLength = 60;
-    QList<qreal> m_hist[6]; // GUI thread only
+    QList<qreal> m_hist[7]; // GUI thread only
 
     // render thread only
     int64_t m_syncStart = 0, m_renderStart = 0;
+    qint64 m_lastShown[2] = {0, 0}; // newest capture time on screen, per channel
     std::atomic<int64_t> m_lastSwapNs{0};
     std::atomic<int64_t> m_lastLagTickNs{0};
 

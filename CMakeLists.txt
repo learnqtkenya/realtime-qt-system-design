@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui GuiPrivate Qml Quick QuickControls2 Quick3D ShaderTools Test)
+find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui GuiPrivate Qml Quick QuickControls2 Quick3D ShaderTools Multimedia Test)
 qt_standard_project_setup(REQUIRES 6.12)
 
 enable_testing()

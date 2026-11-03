@@ -119,10 +119,30 @@ def _step02_series():
     return s
 
 
+def _step03_series():
+    base = ["--points", 150_000, "--rate", 10, "--objects", 50, "--events", 50, "--set", "view=orbit"]
+    def cams(path, sync, hw):
+        return [*base, "--set", "cameras=1", "--set", f"cameraPath={path}", "--set", f"cameraSync={sync}",
+                "--set", f"hwdecode={hw}"]
+    configs = {"none": [*base, "--set", "cameras=0"],
+               "forward-latest-hw": cams("forward", "latest", 1),
+               "forward-latest-sw": cams("forward", "latest", 0),
+               "image-latest-hw": cams("image", "latest", 1),
+               "forward-aligned-hw": cams("forward", "aligned", 1)}
+    s = {"cameras": [(f"{c}-r{n}", args, 20) for n in (1, 2, 3) for c, args in configs.items()]}
+    s["extra"] = [("image-latest-sw", cams("image", "latest", 0), 20),
+                  ("drift-forward-latest-hw-120s", cams("forward", "latest", 1), 120)]
+    return s
+
+
 MODULES["step-02"] = ("app/viewer", MODULES["step-01"][1] + ["pick_index_ms", "pick_quick3d_ms", "index_build_ms"])
 MODULE_ENV["step-02"] = {"QSG_RHI_PROFILE": "1"}
 RATES["step-02"] = ["submitted", "uploaded"]
-MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series(), "step-02": _step02_series()}
+MODULES["step-03"] = ("app/viewer", MODULES["step-02"][1] + ["camera_toimage_ms", "camera_arrival_ms"])
+MODULE_ENV["step-03"] = {"QSG_RHI_PROFILE": "1"}
+RATES["step-03"] = ["camera_decoded", "camera_presented"]
+MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series(), "step-02": _step02_series(),
+                 "step-03": _step03_series()}
 
 EXTRA_SERIES = {
     "m03": {

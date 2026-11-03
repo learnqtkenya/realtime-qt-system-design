@@ -37,8 +37,8 @@ namespace {
 
 constexpr double kBudgetMs = 1000.0 / 60.0;
 
-std::atomic<qint64> g_pendingCaptureNs{0};    // shown by the next swap
-std::atomic<qint64> g_pendingGuiCaptureNs{0}; // enters the scene graph at the next sync
+std::atomic<qint64> g_pendingCaptureNs[2];    // shown by the next swap
+std::atomic<qint64> g_pendingGuiCaptureNs[2]; // enters the scene graph at the next sync
 // Input: the oldest event not yet shown, because that is the one the user is waiting for.
 std::atomic<qint64> g_pendingInputNs{0};
 std::atomic<qint64> g_pendingGuiInputNs{0};
@@ -107,6 +107,9 @@ void FrameMonitor::Series::clear()
     gpuMs.clear();
     inputMs.clear();
     inputDispatchMs.clear();
+    cameraLatencyMs.clear();
+    cameraSkewMs.clear();
+    cameraAbsSkewMs.clear();
     latencyMs.clear();
     lagMs.clear();
     guiCpuPct.clear();
@@ -216,9 +219,9 @@ void FrameMonitor::onSceneGraphInitialized()
 void FrameMonitor::onBeforeSync()
 {
     m_syncStart = nowNs();
-    const qint64 gui = g_pendingGuiCaptureNs.exchange(0);
-    if (gui > 0)
-        storeNewest(g_pendingCaptureNs, gui);
+    for (int ch = 0; ch < 2; ++ch)
+        if (const qint64 gui = g_pendingGuiCaptureNs[ch].exchange(0); gui > 0)
+            storeNewest(g_pendingCaptureNs[ch], gui);
     const qint64 input = g_pendingGuiInputNs.exchange(0);
     if (input > 0)
         storeOldest(g_pendingInputNs, input);
@@ -261,7 +264,8 @@ void FrameMonitor::onFrameSwapped()
 {
     const int64_t now = nowNs();
     const int64_t prev = m_lastSwapNs.exchange(now);
-    const qint64 capture = g_pendingCaptureNs.exchange(0);
+    const qint64 capture = g_pendingCaptureNs[0].exchange(0);
+    const qint64 camera = g_pendingCaptureNs[1].exchange(0);
     const qint64 input = g_pendingInputNs.exchange(0);
 
     std::lock_guard lk(m_mutex);
@@ -280,6 +284,23 @@ void FrameMonitor::onFrameSwapped()
         if (m_benchActive)
             m_bench.inputMs.add(ms);
     }
+    if (camera > 0) {
+        const double ms = double(now - camera) / 1e6;
+        m_cur.cameraLatencyMs.add(ms);
+        if (m_benchActive)
+            m_bench.cameraLatencyMs.add(ms);
+        m_lastShown[1] = camera;
+    }
+    if (capture > 0)
+        m_lastShown[0] = capture;
+    if ((camera > 0 || capture > 0) && m_lastShown[0] > 0 && m_lastShown[1] > 0) {
+        const double skew = double(m_lastShown[1] - m_lastShown[0]) / 1e6;
+        m_cur.cameraSkewMs.add(skew);
+        if (m_benchActive) {
+            m_bench.cameraSkewMs.add(skew);
+            m_bench.cameraAbsSkewMs.add(std::abs(skew));
+        }
+    }
     if (capture > 0) {
         QMetaObject::invokeMethod(this, &FrameMonitor::contentShown, Qt::QueuedConnection);
         const double ms = double(now - capture) / 1e6;
@@ -289,12 +310,13 @@ void FrameMonitor::onFrameSwapped()
     }
 }
 
-void markContentCaptured(qint64 captureNs)
+void markContentCaptured(qint64 captureNs, int channel)
 {
+    channel = std::clamp(channel, 0, 1);
     // GUI-thread content can only reach the screen after the next sync.
     const QCoreApplication *app = QCoreApplication::instance();
     const bool onGuiThread = app && QThread::currentThread() == app->thread();
-    storeNewest(onGuiThread ? g_pendingGuiCaptureNs : g_pendingCaptureNs, captureNs);
+    storeNewest(onGuiThread ? g_pendingGuiCaptureNs[channel] : g_pendingCaptureNs[channel], captureNs);
 }
 
 bool FrameMonitor::eventFilter(QObject *watched, QEvent *event)
@@ -400,6 +422,7 @@ void FrameMonitor::onSecondTick()
         s.latMax = m_cur.latencyMs.max();
         s.gpuMean = m_cur.gpuMs.mean();
         s.inputMean = m_cur.inputMs.mean();
+        s.skewMean = m_cur.cameraSkewMs.mean();
         s.slow = int(m_cur.frameMs.countAbove(kBudgetMs * 1.2));
         m_snap = s;
         if (m_benchActive) {
@@ -410,9 +433,9 @@ void FrameMonitor::onSecondTick()
         m_cur.clear();
         m_curFrames = 0;
     }
-    const qreal values[6] = {m_snap.frameP99, m_snap.lagP99, m_snap.procCpu, m_snap.latMean, m_snap.gpuMean,
-                             m_snap.inputMean};
-    for (int i = 0; i < 6; ++i) {
+    const qreal values[7] = {m_snap.frameP99, m_snap.lagP99, m_snap.procCpu, m_snap.latMean, m_snap.gpuMean,
+                             m_snap.inputMean, m_snap.skewMean};
+    for (int i = 0; i < 7; ++i) {
         m_hist[i].append(values[i]);
         if (m_hist[i].size() > kHistoryLength)
             m_hist[i].removeFirst();
@@ -506,6 +529,9 @@ QJsonObject FrameMonitor::buildReport(double measuredSec)
     r["gpuMs"] = m_bench.gpuMs.toJson();
     r["inputLatencyMs"] = m_bench.inputMs.toJson();
     r["inputDispatchMs"] = m_bench.inputDispatchMs.toJson();
+    r["cameraLatencyMs"] = m_bench.cameraLatencyMs.toJson();
+    r["cameraSkewMs"] = m_bench.cameraSkewMs.toJson();
+    r["cameraAbsSkewMs"] = m_bench.cameraAbsSkewMs.toJson();
     r["frames"] = double(m_benchFrames);
     r["fps"] = measuredSec > 0 ? double(m_benchFrames) / measuredSec : 0.0;
 

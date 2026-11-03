@@ -1,3 +1,4 @@
+#include "Cameras.h"
 #include "CanvasFeed.h"
 #include "EventLogModel.h"
 #include "FrameStore.h"
@@ -13,6 +14,7 @@
 #include "qp/SensorSimulator.h"
 
 #include <QGuiApplication>
+#include <QLoggingCategory>
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickStyle>
@@ -31,6 +33,25 @@ int main(int argc, char *argv[])
             gpuTiming = false;
     if (gpuTiming && !qEnvironmentVariableIsSet("QSG_RHI_PROFILE"))
         qputenv("QSG_RHI_PROFILE", "1");
+    // --set hwdecode=1|0: VA-API video decoding on or off. Qt reads this once, so it's set here.
+    QString decoder = QStringLiteral("Qt default");
+    for (int i = 1; i + 1 < argc; ++i) {
+        if (qstrcmp(argv[i], "--set") != 0)
+            continue;
+        if (qstrcmp(argv[i + 1], "hwdecode=1") == 0) {
+            qputenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", "vaapi");
+            decoder = QStringLiteral("VA-API hardware");
+        } else if (qstrcmp(argv[i + 1], "hwdecode=0") == 0) {
+            qputenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", ",");
+            decoder = QStringLiteral("software");
+        }
+    }
+
+    // FFmpeg describes every input file at info level; warnings in every category stay on.
+    // QT_LOGGING_RULES still overrides this.
+    QLoggingCategory::setFilterRules(QStringLiteral("qt.multimedia.ffmpeg.info=false\n"
+                                                    "qt.multimedia.ffmpeg.mediadataholder.info=false\n"
+                                                    "qt.multimedia.playbackengine.codec.info=false"));
 
     QGuiApplication app(argc, argv);
     QGuiApplication::setApplicationName(QStringLiteral("QtQMLPro Perception Viewer"));
@@ -64,6 +85,11 @@ int main(int argc, char *argv[])
     lab.setViewMode(opts->extra(QStringLiteral("view"), QStringLiteral("top")).toString());
     lab.setLodEnabled(opts->extra(QStringLiteral("lod"), true).toBool());
     Selection selection(&store);
+    Cameras cameras(QCoreApplication::applicationDirPath() + QStringLiteral("/../media"), &hub, decoder);
+    cameras.setPath(opts->extra(QStringLiteral("cameraPath"), QStringLiteral("forward")).toString());
+    cameras.setSync(opts->extra(QStringLiteral("cameraSync"), QStringLiteral("latest")).toString());
+    // Queued from the simulator thread: aligned cameras re-pick when the lidar clock moves.
+    QObject::connect(&mailbox, &LidarMailbox::changed, &cameras, &Cameras::lidarAdvanced, Qt::QueuedConnection);
 
     std::unique_ptr<qp::SensorSimulator> sim;
     if (!opts->noSim()) {
@@ -88,6 +114,7 @@ int main(int argc, char *argv[])
     QJSEngine::setObjectOwnership(&scene, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&lab, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&selection, QJSEngine::CppOwnership);
+    QJSEngine::setObjectOwnership(&cameras, QJSEngine::CppOwnership);
 
     QQmlApplicationEngine engine;
     QObject::connect(
@@ -96,7 +123,10 @@ int main(int argc, char *argv[])
     engine.setExternalSingletonInstance("Viewer", "Scene", &scene);
     engine.setExternalSingletonInstance("Viewer", "Lab", &lab);
     engine.setExternalSingletonInstance("Viewer", "Selection", &selection);
+    engine.setExternalSingletonInstance("Viewer", "Cameras", &cameras);
     engine.loadFromModule("Viewer", "Main");
+    // Started after the window exists, so the panels have their sinks.
+    cameras.setEnabled(opts->extra(QStringLiteral("cameras"), true).toBool());
 
     // --set robot=orbit|click: synthetic input for measuring input-to-photon latency.
     std::unique_ptr<InputRobot> robot;

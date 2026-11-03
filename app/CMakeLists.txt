@@ -1,4 +1,6 @@
 set(VIEWER_SOURCES
+    src/CameraFeed.h src/CameraFeed.cpp
+    src/Cameras.h src/Cameras.cpp
     src/CanvasFeed.h src/CanvasFeed.cpp
     src/EventLogModel.h src/EventLogModel.cpp
     src/FrameStore.h src/FrameStore.cpp
@@ -23,7 +25,7 @@ qt_add_qml_module(viewer
     URI Viewer
     VERSION 1.0
     IMPORT_PATH ${CMAKE_BINARY_DIR}/qml
-    DEPENDENCIES QtQuick QtQuick3D QtQuick3D.Helpers QtQuick.Controls
+    DEPENDENCIES QtQuick QtQuick3D QtQuick3D.Helpers QtQuick.Controls QtMultimedia
     QML_FILES
         qml/Main.qml
         qml/Viewport.qml
@@ -32,6 +34,7 @@ qt_add_qml_module(viewer
         qml/ViewSettings.qml
         qml/Quick3DPoints.qml
         qml/Orbit3DView.qml
+        qml/CameraStrip.qml
     RESOURCES
         qml/heightcolor.vert
         qml/heightcolor.frag
@@ -49,7 +52,7 @@ target_include_directories(viewer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # QRhi has limited compatibility guarantees across Qt versions.
 target_link_libraries(viewer PRIVATE
     qtqmlpro_common qtqmlpro_commonplugin
-    Qt6::Quick3D Qt6::QuickControls2 Qt6::GuiPrivate)
+    Qt6::Quick3D Qt6::QuickControls2 Qt6::Multimedia Qt6::GuiPrivate)
 
 qt_add_executable(tst_viewer tests/tst_viewer.cpp
     src/Lab.h src/Lab.cpp
