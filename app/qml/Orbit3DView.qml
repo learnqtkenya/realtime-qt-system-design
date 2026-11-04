@@ -11,6 +11,8 @@ View3D {
     id: view
 
     readonly property bool live: Lab.viewMode === "orbit"
+    // --set boxes=repeater|instanced: one node per box, or one instanced draw for all (step 5).
+    readonly property bool instanced: AppOptions.extra("boxes", "instanced") === "instanced"
     // Found when the selection or the boxes change, not every frame; null once its box is destroyed.
     property Model selectedBox: null
     // Level of detail: double the stride each time the camera distance doubles past 60 m.
@@ -30,7 +32,9 @@ View3D {
         const near = view.worldFromScene(view.mapTo3DScene(Qt.vector3d(x, y, 0)));
         const far = view.worldFromScene(view.mapTo3DScene(Qt.vector3d(x, y, 1000)));
         const ours = Selection.pickRay(near, far.minus(near));
-        Selection.recordComparison(quick3dId, ours, quick3dMs, hit.objectHit ? hit.distance : -1, near, far.minus(near));
+        // Instanced boxes are one node: Quick 3D's pick can't name the track to compare with.
+        if (!view.instanced)
+            Selection.recordComparison(quick3dId, ours, quick3dMs, hit.objectHit ? hit.distance : -1, near, far.minus(near));
     }
 
     visible: live
@@ -87,7 +91,7 @@ View3D {
         Repeater3D {
             id: boxes
 
-            model: view.live ? Scene.tracks : null
+            model: view.live && !view.instanced ? Scene.tracks : null
 
             onObjectAdded: (index, object) => {
                 if (object.objectName === "track:" + Selection.trackId)
@@ -118,6 +122,19 @@ View3D {
                     baseColor: box.selected ? "#FBBF24" : "#E2E8F0"
                     opacity: box.selected ? 0.85 : 0.25
                 }
+            }
+        }
+
+        Model {
+            visible: view.live && view.instanced
+            source: "#Cube"
+            instancing: TrackInstancing {
+                tracks: view.live && view.instanced ? Scene.tracks : null
+                selectedId: Selection.trackId
+            }
+            materials: PrincipledMaterial {
+                lighting: PrincipledMaterial.NoLighting
+                baseColor: "#FFFFFF"
             }
         }
     }
@@ -174,12 +191,23 @@ View3D {
     }
 
     function placeMarker(): void {
-        const b = view.selectedBox;
-        if (!b) {
-            marker.visible = false;
-            return;
+        let scenePosition;
+        if (view.instanced) {
+            const i = Selection.info;
+            if (i.id === undefined) {
+                marker.visible = false;
+                return;
+            }
+            scenePosition = world.mapPositionToScene(Qt.vector3d(i.x, i.y, Selection.groundZ() + i.height / 2));
+        } else {
+            const b = view.selectedBox;
+            if (!b) {
+                marker.visible = false;
+                return;
+            }
+            scenePosition = b.scenePosition;
         }
-        const p = view.mapFrom3DScene(b.scenePosition);
+        const p = view.mapFrom3DScene(scenePosition);
         marker.visible = p.z > 0;
         marker.x = p.x - marker.width / 2;
         marker.y = p.y - marker.height / 2;

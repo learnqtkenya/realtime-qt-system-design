@@ -61,6 +61,8 @@ public:
     double grabAfterSec() const { return m_grabAfterSec; }
     // --set key=value (repeatable): app-specific settings.
     Q_INVOKABLE QVariant extra(const QString &key, const QVariant &fallback = {}) const;
+    // Values are strings; in QML "0" would be true. This converts the way C++ does ("0", "false": false).
+    Q_INVOKABLE bool flag(const QString &key, bool fallback) const { return extra(key, fallback).toBool(); }
 
     Q_INVOKABLE QVariantMap workloadMap() const;
 

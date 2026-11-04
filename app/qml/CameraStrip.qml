@@ -7,6 +7,9 @@ import Viewer
 Row {
     id: strip
 
+    // Four tiles across the width the strip is given.
+    readonly property real tileWidth: Math.min(288, (width - 3 * spacing) / 4)
+
     spacing: 6
 
     Repeater {
@@ -17,8 +20,8 @@ Row {
 
             required property CameraFeed modelData
 
-            width: 288
-            height: 162 + 20
+            width: strip.tileWidth
+            height: strip.tileWidth * 9 / 16 + 20
             color: "#000000"
             border.color: "#334155"
 
@@ -28,7 +31,7 @@ Row {
                 x: 0
                 y: 0
                 width: tile.width
-                height: 162
+                height: tile.width * 9 / 16
                 visible: Cameras.path === "forward"
                 fillMode: VideoOutput.PreserveAspectFit
 
@@ -39,14 +42,14 @@ Row {
                 x: 0
                 y: 0
                 width: tile.width
-                height: 162
+                height: tile.width * 9 / 16
                 visible: Cameras.path === "image"
                 feed: Cameras.path === "image" ? tile.modelData : null
             }
 
             Text {
                 x: 6
-                y: 164
+                y: tile.width * 9 / 16 + 2
                 color: Math.abs(tile.modelData.skewMs) > 50 ? "#FBBF24" : "#CBD5E1"
                 font.pixelSize: 11
                 font.family: "monospace"

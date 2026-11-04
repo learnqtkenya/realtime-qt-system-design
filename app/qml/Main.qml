@@ -63,10 +63,20 @@ ApplicationWindow {
         onActivated: Timeline.toggleRecording()
     }
 
-    Viewport {
+    DataPanel {
+        id: dataPanel
+
         x: 0
         y: 0
-        width: root.width - panel.width
+        width: 360
+        height: root.height
+        visible: AppOptions.flag("dataPanel", true)
+    }
+
+    Viewport {
+        x: dataPanel.visible ? dataPanel.width : 0
+        y: 0
+        width: root.width - panel.width - x
         height: root.height
         monitor: frameMonitor
     }

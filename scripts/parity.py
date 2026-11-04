@@ -14,7 +14,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bench  # noqa: E402
 
-SCENE = ["--still", "--points", "20000", "--objects", "50", "--events", "0", "--grab-after", "3"]
+# The data panel (step 5) is hidden: parity regions assume the view starts at x = 0.
+SCENE = ["--still", "--points", "20000", "--objects", "50", "--events", "0", "--grab-after", "3", "--set", "dataPanel=0"]
 APIS = ("opengl", "vulkan")
 VIEWER = bench.BUILD / "app/viewer"
 MODES = {
@@ -25,10 +26,13 @@ MODES = {
                           for v in ("sg", "rhi", "rhi-ring", "quick3d")],
                 region=(0, 170, 1040, 800)),  # left of the event log, below the HUD
     # The product: every renderer against the app's own worker raster.
-    "app": dict(out=bench.ROOT / "results" / "step-01" / "parity",
-                reference=("worker", VIEWER, ["--variant", "worker"]),
-                variants=[(v, VIEWER, ["--variant", v]) for v in ("canvas", "painted", "sg", "rhi", "quick3d")],
-                region=(0, 170, 1220, 900)),  # left of the lab panel, below the HUD
+    # Since steps 3–4: cameras off (their strip would be in the region) and the region stops above the
+    # timeline bar. 12k points per sensor keeps the canvas under its 0.5M points/s cap.
+    "app": dict(out=bench.ROOT / "results" / "step-05" / "parity",
+                reference=("worker", VIEWER, ["--variant", "worker", "--set", "cameras=0", "--points", "12000"]),
+                variants=[(v, VIEWER, ["--variant", v, "--set", "cameras=0", "--points", "12000"])
+                          for v in ("canvas", "painted", "sg", "rhi", "quick3d")],
+                region=(0, 170, 1220, 850)),  # left of the lab panel, below the HUD, above the timeline
 }
 # Step 4: a replayed recording against the live view it was recorded from (cameras off; the
 # region stops above the timeline bar).

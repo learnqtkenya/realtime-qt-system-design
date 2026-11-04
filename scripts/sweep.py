@@ -204,12 +204,57 @@ def _step04_series():
     return s
 
 
+def _step05_series():
+    def base(objects, events):
+        return ["--points", 150_000, "--rate", 10, "--objects", objects, "--events", events, "--variant", "rhi",
+                "--set", "cameras=0"]
+
+    def setting(**kv):
+        return [a for k, v in kv.items() for a in ("--set", f"{k}={v}")]
+
+    ups = ("reset", "diff")
+    s = {}
+    s["objects"] = [(f"objects-{u}-{o}-r{n}", [*base(o, 50), *setting(updates=u)], 20)
+                    for n in (1, 2) for o in (50, 200, 800, 2000) for u in ups]
+    s["panel-off"] = [(f"panel-off-{u}-{o}", [*base(o, 50), *setting(updates=u, dataPanel=0)], 20)
+                      for o in (800, 2000) for u in ups]
+    s["events"] = [(f"events-{u}-{e}-r{n}", [*base(50, e), *setting(updates=u)], 30)
+                   for n in (1, 2) for e in (50, 500, 2000) for u in ups]
+    s["sort"] = [(f"sort-{k}-{u}-2000", [*base(2000, 50), *setting(updates=u, sortKey=k)], 20)
+                 for k in ("trackId", "speed") for u in ups]
+    s["search"] = [(f"search-{u}-2000ev", [*base(50, 2000), *setting(updates=u, searchCycle=0.5)], 30) for u in ups]
+    s["orbit"] = [(f"orbit-{u}-{b}-{o}", [*base(o, 50), *setting(view="orbit", updates=u, boxes=b)], 20)
+                  for o in (800, 2000) for u, b in (("reset", "repeater"), ("diff", "repeater"), ("diff", "instanced"))]
+    s["soak"] = [(f"eventsoak-{u}-180s", [*base(50, 2000), *setting(updates=u)], 180) for u in ups]
+    # Round 2, after the numbers above.
+    s["overlay"] = [(f"overlay-node-{o}-r{n}", [*base(o, 50), *setting(updates="diff", overlay="node")], 20)
+                    for n in (1, 2) for o in (200, 800, 2000)]
+    s["overlay"] += [(f"overlay-items-200-r{n}", [*base(200, 50), *setting(updates="diff")], 20) for n in (1, 2)]
+    s["sort3d"] = [(f"sort3d-{k}-2000-r{n}", [*base(2000, 50), *setting(view="orbit", updates="diff", boxes="instanced",
+                                                                       sortKey=k)], 20)
+                   for n in (1, 2) for k in ("trackId", "speed")]
+    s["eventsoak-nohistory"] = [(f"eventsoak-nohistory-{u}-180s", [*base(50, 2000), *setting(updates=u, historyMb=0)], 180)
+                                for u in ups]
+    # Round 3: the search filter as a proxy or an index model; delegate reuse off and on.
+    s["round3"] = [(f"search-{f}-2000ev-r{n}", [*base(50, 2000), *setting(updates="diff", eventFilter=f, searchCycle=0.5)], 30)
+                   for n in (1, 2) for f in ("proxy", "index")]
+    s["round3"] += [(f"reuse-{int(r)}-2000ev-r{n}", [*base(50, 2000), *setting(updates="diff", reuseItems=int(r))], 30)
+                    for n in (1, 2) for r in (False, True)]
+    full = [*base(2000, 2000)[:-2], "--set", "cameras=1", *setting(updates="diff", overlay="node", boxes="instanced")]
+    s["all"] = [(f"all-{v}-r{n}", [*full, *setting(view=v)], 30) for n in (1, 2) for v in ("top", "orbit")]
+    return s
+
+
+MODULES["step-05"] = ("app/viewer", ["tracks_rebuild_ms", "event_reset_ms", "instancing_build_ms",
+                                     "event_filter_ms"])
+MODULE_ENV["step-05"] = {"QSG_RHI_PROFILE": "1"}
+RATES["step-05"] = ["table_row_created", "log_row_created"]
 MODULES["step-04"] = ("app/viewer", ["history_add_ms", "seek_ms", "present_late_ms", "live_late_ms",
                                      "record_lidar_encode_ms", "record_chunk_write_ms", "camera_seek_ms"])
 MODULE_ENV["step-04"] = {"QSG_RHI_PROFILE": "1"}
 RATES["step-04"] = ["camera_decoded", "camera_presented"]
 MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series(), "step-02": _step02_series(),
-                 "step-03": _step03_series(), "step-04": _step04_series()}
+                 "step-03": _step03_series(), "step-04": _step04_series(), "step-05": _step05_series()}
 
 EXTRA_SERIES = {
     "m03": {

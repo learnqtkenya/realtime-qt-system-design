@@ -407,33 +407,6 @@ Rectangle {
                     }
                 }
             }
-
-            SectionTitle {
-                text: "Events"
-            }
-            ListView {
-                id: log
-
-                Layout.fillWidth: true
-                Layout.preferredHeight: 150
-                clip: true
-                model: Scene.events
-
-                onCountChanged: positionViewAtEnd()
-
-                delegate: Text {
-                    required property int severity
-                    required property string source
-                    required property string message
-
-                    width: log.width
-                    elide: Text.ElideRight
-                    font.family: "monospace"
-                    font.pixelSize: 11
-                    color: severity === 0 ? "#94A3B8" : (severity === 1 ? "#FBBF24" : "#F87171")
-                    text: source + "  " + message
-                }
-            }
         }
     }
 }

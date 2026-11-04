@@ -9,6 +9,7 @@ Item {
 
     required property FrameMonitor monitor
     readonly property bool topDown: Lab.viewMode === "top"
+    readonly property bool nodeOverlay: AppOptions.extra("overlay", "node") === "node"
 
     objectName: "viewport"
     clip: true
@@ -161,8 +162,17 @@ Item {
         }
     }
 
+    // --set overlay=items|node: a QML item per object, or one scene graph subtree for all (step 5).
+    TrackOverlay {
+        anchors.fill: parent
+        visible: viewport.topDown && viewport.nodeOverlay
+        tracks: visible ? Scene.tracks : null
+        pxPerMetre: ViewSettings.pxPerMetre
+        selectedId: Selection.trackId
+    }
+
     Repeater {
-        model: viewport.topDown ? Scene.tracks : null
+        model: viewport.topDown && !viewport.nodeOverlay ? Scene.tracks : null
 
         delegate: Item {
             id: track
@@ -202,6 +212,7 @@ Item {
 
     CameraStrip {
         anchors.left: parent.left
+        anchors.right: parent.right
         anchors.bottom: timelineBar.top
         anchors.margins: 8
     }

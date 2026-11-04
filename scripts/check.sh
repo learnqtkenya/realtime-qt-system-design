@@ -17,7 +17,8 @@ fi
 echo "qmllint: ok"
 
 bad=0
-for f in $(git ls-files '*.qml'); do
+# Untracked files too: a new file must not escape the check until its first commit.
+for f in $(git ls-files --cached --others --exclude-standard '*.qml'); do
     if ! "$QT/bin/qmlformat" "$f" | diff -q - "$f" >/dev/null; then
         echo "needs qmlformat: $f"
         bad=1

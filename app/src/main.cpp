@@ -79,6 +79,16 @@ int main(int argc, char *argv[])
     CanvasFeed canvasFeed;
     TrackListModel tracks(&store);
     EventLogModel events;
+    // --set updates=reset|diff: how model changes reach the views (step 5).
+    const bool diffUpdates = opts->extra(QStringLiteral("updates"), QStringLiteral("diff")).toString() == QLatin1String("diff");
+    tracks.setUpdates(diffUpdates ? TrackListModel::Updates::Diff : TrackListModel::Updates::Reset);
+    events.setUpdates(diffUpdates ? EventLogModel::Updates::Diff : EventLogModel::Updates::Reset,
+                      opts->extra(QStringLiteral("eventCap"), 10'000).toInt());
+    TrackTableProxy objectTable(&tracks);
+    EventFilterProxy eventLogProxy(&events);
+    EventFilterModel eventLogIndex(&events);
+    const bool proxyFilter = opts->extra(QStringLiteral("eventFilter"), QStringLiteral("index")).toString() == QLatin1String("proxy");
+    QAbstractItemModel *eventLog = proxyFilter ? static_cast<QAbstractItemModel *>(&eventLogProxy) : &eventLogIndex;
     QObject::connect(&store, &FrameStore::eventsArrived, &events,
                      [&events](const qp::EventBatchPtr &b) { events.appendBatch(*b); });
 
@@ -203,7 +213,7 @@ int main(int argc, char *argv[])
     if (const QStringList to = opts->extra(QStringLiteral("switchTo")).toString().split(u'@'); to.size() == 2)
         QTimer::singleShot(int(to[1].toDouble() * 1000), &lab, [&lab, id = to[0]] { lab.setRenderer(id); });
 
-    Scene scene({&store, &pipeline, &mailbox, &canvasFeed, &tracks, &events});
+    Scene scene({&store, &pipeline, &mailbox, &canvasFeed, &tracks, &events, &objectTable, eventLog});
     QJSEngine::setObjectOwnership(&scene, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&lab, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&selection, QJSEngine::CppOwnership);
@@ -222,6 +232,25 @@ int main(int argc, char *argv[])
     engine.loadFromModule("Viewer", "Main");
     // Started after the window exists, so the panels have their sinks.
     cameras.setEnabled(opts->extra(QStringLiteral("cameras"), true).toBool());
+
+    // --set selectId=<id>: select an object after a second (screenshots).
+    if (const int id = opts->extra(QStringLiteral("selectId"), -1).toInt(); id >= 0)
+        QTimer::singleShot(1000, &selection, [&selection, id] { selection.select(id); });
+    // --set sortKey=<role> [--set sortDescending=1]: the objects table's sort.
+    if (const QString key = opts->extra(QStringLiteral("sortKey")).toString(); !key.isEmpty()) {
+        objectTable.setSortKey(key);
+        objectTable.setDescending(opts->extra(QStringLiteral("sortDescending"), false).toBool());
+    }
+    // --set searchCycle=<s>: search the event log for "late", then clear it, every <s> seconds.
+    std::unique_ptr<QTimer> searchCycle;
+    if (const double every = opts->extra(QStringLiteral("searchCycle"), 0).toDouble(); every > 0) {
+        searchCycle = std::make_unique<QTimer>();
+        QObject::connect(searchCycle.get(), &QTimer::timeout, eventLog, [eventLog] {
+            eventLog->setProperty("text", eventLog->property("text").toString().isEmpty() ? QStringLiteral("late")
+                                                                                          : QString());
+        });
+        searchCycle->start(int(every * 1000));
+    }
 
     // --set robot=orbit|click: synthetic input for measuring input-to-photon latency.
     std::unique_ptr<InputRobot> robot;

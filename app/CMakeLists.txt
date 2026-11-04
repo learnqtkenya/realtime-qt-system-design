@@ -9,6 +9,9 @@ set(VIEWER_SOURCES
     src/Recording.h src/Recording.cpp
     src/Source.h
     src/Presenter.h src/Presenter.cpp
+    src/Proxies.h src/Proxies.cpp
+    src/TrackInstancing.h src/TrackInstancing.cpp
+    src/TrackOverlay.h src/TrackOverlay.cpp
     src/Timeline.h src/Timeline.cpp
     src/CameraFeed.h src/CameraFeed.cpp
     src/Cameras.h src/Cameras.cpp
@@ -47,6 +50,7 @@ qt_add_qml_module(viewer
         qml/Orbit3DView.qml
         qml/CameraStrip.qml
         qml/TimelineBar.qml
+        qml/DataPanel.qml
     RESOURCES
         qml/heightcolor.vert
         qml/heightcolor.frag
@@ -97,3 +101,10 @@ qt_add_executable(tst_presenter tests/tst_presenter.cpp
 target_include_directories(tst_presenter PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(tst_presenter PRIVATE qtqmlpro_common Qt6::Test PkgConfig::ZSTD ZLIB::ZLIB)
 add_test(NAME presenter COMMAND tst_presenter)
+
+qt_add_executable(tst_models tests/tst_models.cpp
+    src/TrackListModel.h src/TrackListModel.cpp src/EventLogModel.h src/EventLogModel.cpp
+    src/FrameStore.h src/FrameStore.cpp src/Proxies.h src/Proxies.cpp)
+target_include_directories(tst_models PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(tst_models PRIVATE qtqmlpro_common Qt6::Test Qt6::Qml)
+add_test(NAME models COMMAND tst_models)
