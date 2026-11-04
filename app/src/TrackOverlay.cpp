@@ -1,5 +1,6 @@
 #include "TrackOverlay.h"
 
+#include "FrameStore.h"
 #include "TrackListModel.h"
 #include "qp/StageStats.h"
 
@@ -182,6 +183,22 @@ QSGNode *TrackOverlay::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
         layout.createLine();
         layout.endLayout();
         (isSelected ? selectedLabel : labels)->addTextLayout(QPointF(cx + t.x * s + 8, cy - t.y * s - 20), &layout);
+    }
+    // Operator notes from the last 5 s of scene time, where they were made.
+    if (m_tracks && m_tracks->store()) {
+        const qp::TrackSetPtr set = m_tracks->store()->latestTracks();
+        const qint64 now = set ? set->captureNs : 0;
+        QFont noteFont = font;
+        noteFont.setBold(true);
+        for (const qp::EventRecord &n : m_tracks->store()->notes()) {
+            if (n.captureNs > now || now - n.captureNs > 5'000'000'000LL)
+                continue;
+            QTextLayout layout(QStringLiteral("◆ ") + n.text, noteFont);
+            layout.beginLayout();
+            layout.createLine();
+            layout.endLayout();
+            selectedLabel->addTextLayout(QPointF(cx + n.x * s - 4, cy - n.y * s + 6), &layout);
+        }
     }
     qp::StageStats::instance().add(QStringLiteral("overlay_sync_ms"), double(qp::nowNs() - t0) / 1e6);
     return root;

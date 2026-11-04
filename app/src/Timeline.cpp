@@ -44,15 +44,20 @@ std::shared_ptr<rec::Writer> Timeline::writer() const
 
 void Timeline::ingestLidar(const qp::SensorFrame &frame)
 {
+    // The wire carries any 16-bit stream number; only sensors the viewer has a place for get in.
+    if (frame.sensorId < 0 || frame.sensorId >= qp::kMaxSensors) {
+        qp::StageStats::instance().add(QStringLiteral("lidar_bad_sensor"), double(frame.sensorId));
+        return;
+    }
     if (m_health)
-        m_health->arrived(qp::kLidarStream0 + frame.sensorId, frame.seq, frame.captureNs);
+        m_health->arrived(qp::lidarStream(frame.sensorId), frame.seq, frame.captureNs);
     if (m_validate) {
         const qint64 t0 = qp::nowNs();
         const bool ok = validate::lidar(frame);
         qp::StageStats::instance().add(QStringLiteral("validate_ms"), double(qp::nowNs() - t0) / 1e6);
         if (!ok) {
             if (m_health)
-                m_health->rejected(qp::kLidarStream0 + frame.sensorId);
+                m_health->rejected(qp::lidarStream(frame.sensorId));
             return;
         }
     }

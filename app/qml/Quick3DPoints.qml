@@ -27,7 +27,7 @@ View3D {
     }
 
     Repeater3D {
-        model: 4
+        model: Lab.sensors
 
         delegate: Model {
             id: model

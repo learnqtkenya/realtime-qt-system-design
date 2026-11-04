@@ -30,7 +30,7 @@ bool AppOptions::parse(const QStringList &arguments)
     p.addOption({"duration", "Measured seconds.", "s", "20"});
     p.addOption({"out", "Report path.", "file", "report.json"});
     p.addOption({"label", "Free-form run label.", "text", ""});
-    p.addOption({"sensors", "Number of lidar sensors (1-4).", "n", "4"});
+    p.addOption({"sensors", "Number of lidar sensors (1-8).", "n", "4"});
     p.addOption({"points", "Points per sensor per frame.", "n", "10000"});
     p.addOption({"rate", "Lidar frame rate in Hz.", "hz", "10"});
     p.addOption({"objects", "Tracked objects.", "n", "50"});
@@ -71,7 +71,7 @@ bool AppOptions::parse(const QStringList &arguments)
     double v = 0;
     if (!num("warmup", 0, 3600, m_warmupSec) || !num("duration", 1, 36000, m_durationSec))
         return false;
-    if (!num("sensors", 1, 4, v))
+    if (!num("sensors", 1, kMaxSensors, v))
         return false;
     m_workload.sensors = int(v);
     if (!num("points", 0, 5'000'000, v))

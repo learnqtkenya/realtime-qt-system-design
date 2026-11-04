@@ -1,0 +1,9 @@
+13:18:05 [peak-16-r1] --bench --warmup 3 --duration 20 --label peak-16-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-10/raw/peak-16-r1.json --points 300000 --rate 20 --objects 800 --events 2000 --variant rhi --set cameras=1
+13:18:28 [peak-2-r1] --bench --warmup 3 --duration 20 --label peak-2-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-10/raw/peak-2-r1.json --points 300000 --rate 20 --objects 800 --events 2000 --variant rhi --set cameras=1
+13:18:52 [peak-1-r1] --bench --warmup 3 --duration 20 --label peak-1-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-10/raw/peak-1-r1.json --points 300000 --rate 20 --objects 800 --events 2000 --variant rhi --set cameras=1
+13:19:15 [peak-16-r2] --bench --warmup 3 --duration 20 --label peak-16-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-10/raw/peak-16-r2.json --points 300000 --rate 20 --objects 800 --events 2000 --variant rhi --set cameras=1
+13:19:39 [peak-2-r2] --bench --warmup 3 --duration 20 --label peak-2-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-10/raw/peak-2-r2.json --points 300000 --rate 20 --objects 800 --events 2000 --variant rhi --set cameras=1
+13:20:02 [peak-1-r2] --bench --warmup 3 --duration 20 --label peak-1-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-10/raw/peak-1-r2.json --points 300000 --rate 20 --objects 800 --events 2000 --variant rhi --set cameras=1
+13:20:26 [cores-1-cam1-r1] --bench --warmup 3 --duration 20 --label cores-1-cam1-r1 --out /home/user/Documents/Qt/QtQMLPro/results/step-10/raw/cores-1-cam1-r1.json --points 150000 --rate 10 --objects 200 --events 200 --variant rhi --set cameras=1
+13:20:49 [cores-1-cam1-r2] --bench --warmup 3 --duration 20 --label cores-1-cam1-r2 --out /home/user/Documents/Qt/QtQMLPro/results/step-10/raw/cores-1-cam1-r2.json --points 150000 --rate 10 --objects 200 --events 200 --variant rhi --set cameras=1
+wrote /home/user/Documents/Qt/QtQMLPro/results/step-10/summary.md

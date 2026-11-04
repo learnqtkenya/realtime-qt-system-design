@@ -91,6 +91,72 @@ private slots:
         for (size_t i = 1; i < seqs.size(); ++i)
             QVERIFY(seqs[i] > seqs[i - 1]); // latest-wins may skip, never reorder
     }
+
+    // Step 10: notes are events with an anchor appended to the item. They round-trip, and a reader
+    // that only knows version 1 fields still gets the text.
+    void anchoredEventsRoundTrip()
+    {
+        qp::EventRecord note{7, 123, 0, "note", "#1003: crossing"};
+        note.trackId = 1003;
+        note.x = 12.5f;
+        note.y = -3.25f;
+        note.anchored = true;
+        const qp::EventBatch batch{{1, 100, 1, "lidar2", "late"}, note};
+        const QByteArray b = rec::encodeEvents(batch);
+        const qp::EventBatchPtr back = rec::decodeEvents(rec::kEventsVersion, b.constData(), size_t(b.size()));
+        QVERIFY(back);
+        QCOMPARE(back->size(), size_t(2));
+        QVERIFY(!(*back)[0].anchored);
+        QVERIFY((*back)[1].anchored);
+        QCOMPARE((*back)[1].trackId, 1003);
+        QCOMPARE((*back)[1].x, 12.5f);
+        QCOMPARE((*back)[1].text, QStringLiteral("#1003: crossing"));
+        const qp::EventBatchPtr asV1 = rec::decodeEvents(1, b.constData(), size_t(b.size()));
+        QVERIFY(asV1);
+        QCOMPARE((*asV1)[1].text, QStringLiteral("#1003: crossing"));
+    }
+
+    // A slow client loses plain events beyond its queue, never a note.
+    void slowClientKeepsNotes()
+    {
+        // Small socket buffers, and the socket full before any event: the queue must overflow on every run.
+        StreamServer server(47401, StreamServer::Policy::Latest, 0, {}, 64 * 1024, 16 * 1024);
+        QVERIFY(server.start(nullptr));
+        std::mutex m;
+        int events = 0, notes = 0;
+        StreamClient client(QStringLiteral("127.0.0.1"), 47401, 0.3, 64 * 1024,
+                            {[](const qp::SensorFrame &) {}, [](const qp::TrackSetPtr &) {},
+                             [&](const qp::EventBatchPtr &b) {
+                                 std::lock_guard g(m);
+                                 for (const auto &e : *b)
+                                     (e.anchored ? notes : events) += 1;
+                             },
+                             {}});
+        client.start();
+        QTRY_VERIFY_WITH_TIMEOUT(server.status().size() == 1, 3000);
+        for (int i = 0; i < 4; ++i)
+            server.publishLidar(frame(i, quint64(i), i, 150'000));
+        for (int i = 0; i < 600; ++i) {
+            if (i % 20 == 0)
+                server.publishLidar(frame(0, quint64(i), i * 1'000'000, 150'000)); // fills the socket
+            qp::EventRecord e{quint64(i), i, 0, "s", QString(200, u'x')};
+            if (i == 0 || i == 300) {
+                e.source = QStringLiteral("note");
+                e.anchored = true;
+                e.trackId = i;
+            }
+            server.publishEvents(std::make_shared<qp::EventBatch>(qp::EventBatch{e}));
+        }
+        QTRY_VERIFY_WITH_TIMEOUT([&] {
+            std::lock_guard g(m);
+            return notes == 2;
+        }(), 20000);
+        QTRY_VERIFY_WITH_TIMEOUT(server.status().value(0).contains(u"events dropped")
+                                     && !server.status().value(0).contains(u" 0 events dropped"),
+                                 3000);
+        std::lock_guard g(m);
+        QVERIFY2(events < 598, qPrintable(QString::number(events))); // plain events were dropped
+    }
 };
 
 QTEST_GUILESS_MAIN(TstWire)

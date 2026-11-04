@@ -3,6 +3,8 @@
 #include "TrackIndex.h"
 
 #include <QObject>
+
+#include <functional>
 #include <QQmlEngine>
 #include <QVariantMap>
 #include <QVector3D>
@@ -32,6 +34,9 @@ public:
     Q_INVOKABLE int pickRay(const QVector3D &origin, const QVector3D &direction);
     Q_INVOKABLE void select(int trackId);
     Q_INVOKABLE void clear() { select(-1); }
+    // A note on the selected object, in the scene shown now. False if nothing is selected.
+    Q_INVOKABLE bool annotate(const QString &text);
+    void setNoteSink(std::function<void(const qp::EventRecord &)> sink) { m_noteSink = std::move(sink); }
     // One source of truth for box heights, shared with the 3D view.
     Q_INVOKABLE double heightFor(int cls) const { return TrackIndex::heightFor(quint8(cls)); }
     Q_INVOKABLE double groundZ() const { return TrackIndex::kGroundZ; }
@@ -53,4 +58,6 @@ private:
     bool m_dirty = true;
     int m_trackId = -1;
     QVariantMap m_info;
+    std::function<void(const qp::EventRecord &)> m_noteSink;
+    quint64 m_noteSeq = 0;
 };

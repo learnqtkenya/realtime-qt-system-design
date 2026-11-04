@@ -435,11 +435,12 @@ Rectangle {
                 ComboBox {
                     id: faultStream
 
-                    readonly property var streams: [0, 1, 2, 3, 4, 10]
+                    // Stream numbers (SimTypes.h): lidars 0-3 are 0-3, lidars 4-7 are 11-14, tracks 4, GUI 10.
+                    readonly property var streams: [...Array(Lab.sensors).keys()].map(i => i < 4 ? i : 7 + i).concat([4, 10])
 
                     Layout.fillWidth: true
                     focusPolicy: Qt.NoFocus
-                    model: ["lidar 0", "lidar 1", "lidar 2", "lidar 3", "tracks", "GUI thread"]
+                    model: [...Array(Lab.sensors).keys()].map(i => "lidar " + i).concat(["tracks", "GUI thread"])
                 }
                 Caption {
                     text: Lab.faults[String(faultStream.streams[faultStream.currentIndex])] ?? "no fault"
@@ -451,7 +452,7 @@ Rectangle {
                 spacing: 4
 
                 Repeater {
-                    model: faultStream.currentIndex === 5 ? [["block 300 ms", "gui300"], ["clear", "clear"]] : [["drop 50%", "drop50"], ["delay 300 ms", "delay300"], ["jitter ±100", "jitter100"], ["corrupt", "corrupt"], ["stall", "stall"], ["clear", "clear"]]
+                    model: faultStream.streams[faultStream.currentIndex] === 10 ? [["block 300 ms", "gui300"], ["clear", "clear"]] : [["drop 50%", "drop50"], ["delay 300 ms", "delay300"], ["jitter ±100", "jitter100"], ["corrupt", "corrupt"], ["stall", "stall"], ["clear", "clear"]]
 
                     delegate: Button {
                         required property var modelData
@@ -547,6 +548,17 @@ Rectangle {
                     if (Selection.trackId < 0 || i.id === undefined)
                         return "Click an object in the view to inspect it.";
                     return "#" + i.id + "  " + i.cls + "\n" + i.speed.toFixed(1) + " m/s, heading " + i.heading.toFixed(0) + "°\n" + "at (" + i.x.toFixed(1) + ", " + i.y.toFixed(1) + ") m, " + i.distance.toFixed(1) + " m away\n" + i.length.toFixed(1) + " × " + i.width.toFixed(1) + " × " + i.height.toFixed(1) + " m";
+                }
+            }
+            TextField {
+                id: note
+
+                visible: Selection.trackId >= 0
+                Layout.fillWidth: true
+                placeholderText: "Add a note on this object, then Enter"
+                onAccepted: {
+                    if (Selection.annotate(text))
+                        text = "";
                 }
             }
 

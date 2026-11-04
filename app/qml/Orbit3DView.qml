@@ -66,7 +66,7 @@ View3D {
         eulerRotation.x: -90
 
         Repeater3D {
-            model: 4
+            model: Lab.sensors
 
             delegate: Model {
                 id: points

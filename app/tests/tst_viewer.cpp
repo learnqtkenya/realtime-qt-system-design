@@ -1,3 +1,4 @@
+#include "HealthMonitor.h"
 #include "Lab.h"
 #include "LidarHub.h"
 #include "LidarMailbox.h"
@@ -26,6 +27,23 @@ class TstViewer : public QObject
 {
     Q_OBJECT
 private slots:
+    // Stream numbers can come from the network (step 10 found one that didn't fit): ignored, not used.
+    void healthIgnoresStreamsItDoesNotHave()
+    {
+        HealthMonitor h;
+        h.configure(qp::lidarStream(7), QStringLiteral("lidar 7"), 100, 100);
+        for (int stream : {-1, int(qp::kStreamCount), 1000, 65535}) {
+            h.arrived(stream, 1, qp::nowNs());
+            h.rejected(stream);
+            h.noteFault(stream, QStringLiteral("drop50"));
+        }
+        QCOMPARE(qp::lidarSensor(qp::lidarStream(7)), 7);
+        QCOMPARE(qp::lidarStream(3), 3);
+        QCOMPARE(qp::lidarStream(4), int(qp::kLidarStream4));
+        QCOMPARE(qp::lidarSensor(qp::kTracksStream), -1);
+        QCOMPARE(qp::lidarSensor(qp::kGuiStream), -1);
+    }
+
     void initTestCase() { qp::registerSimTypes(); }
 
     void hubSendsOnlyToTheActiveRoute()

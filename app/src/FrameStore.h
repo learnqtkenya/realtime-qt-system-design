@@ -4,6 +4,7 @@
 
 #include <QObject>
 
+#include <deque>
 #include <vector>
 
 // Domain layer: QtCore only. Holds the newest data per stream; frames are immutable and shared.
@@ -21,6 +22,8 @@ public:
     void setLidar(const qp::SensorFrame &frame);
     void setTracks(const qp::TrackSetPtr &tracks);
     void addEvents(const qp::EventBatchPtr &batch);
+    // The newest anchored events (notes), at most 50, for drawing.
+    const std::deque<qp::EventRecord> &notes() const { return m_notes; }
 
 signals:
     void lidarChanged(int sensorId);
@@ -30,4 +33,5 @@ signals:
 private:
     std::vector<qp::SensorFrame> m_lidar;
     qp::TrackSetPtr m_tracks;
+    std::deque<qp::EventRecord> m_notes;
 };

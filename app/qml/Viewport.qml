@@ -88,7 +88,9 @@ Item {
         Canvas {
             id: canvas
 
-            property var clouds: [[], [], [], []]
+            property var clouds: Array.from({
+                length: Lab.sensors
+            }, () => [])
             property real newestCaptureNs: 0
 
             antialiasing: false // the other renderers draw hard-edged squares

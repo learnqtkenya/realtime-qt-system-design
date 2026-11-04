@@ -79,10 +79,10 @@ SensorSimulator::makeCloud(const Workload &w, int sensorId, int variant)
     const int n = std::max(0, w.pointsPerFrame);
     cloud->xyz.resize(size_t(n) * 3);
 
-    static constexpr float mountX[4] = {1.0f, 1.0f, -1.0f, -1.0f};
-    static constexpr float mountY[4] = {0.8f, -0.8f, 0.8f, -0.8f};
-    const float mx = mountX[sensorId & 3];
-    const float my = mountY[sensorId & 3];
+    static constexpr float mountX[kMaxSensors] = {1.0f, 1.0f, -1.0f, -1.0f, 2.2f, 0.0f, -2.2f, 0.0f};
+    static constexpr float mountY[kMaxSensors] = {0.8f, -0.8f, 0.8f, -0.8f, 0.0f, 1.1f, 0.0f, -1.1f};
+    const float mx = mountX[sensorId % kMaxSensors];
+    const float my = mountY[sensorId % kMaxSensors];
 
     const std::vector<Pillar> pillars = makePillars(w.seed);
     Rng rng(w.seed * 2654435761u + uint32_t(sensorId) * 40503u + uint32_t(variant) * 9973u + 1u);
@@ -237,10 +237,10 @@ private:
         f.seq = m_lidarSeq[size_t(sensor)]++;
         f.captureNs = nowNs() - int64_t(m_w.lidarDelayMs * 1e6);
         int64_t delayNs = 0;
-        if (!faulted(kLidarStream0 + sensor, &delayNs))
+        if (!faulted(lidarStream(sensor), &delayNs))
             return;
         const auto &pooled = m_pool[size_t(sensor)][m_w.still ? 0 : f.seq % kPoolVariants];
-        if (corrupting(kLidarStream0 + sensor)) {
+        if (corrupting(lidarStream(sensor))) {
             auto bad = std::make_shared<PointCloud>(*pooled);
             for (size_t i = 0; i < bad->xyz.size(); i += 3) {
                 const uint32_t r = m_faultRng.next() % 1000;

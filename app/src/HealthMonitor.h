@@ -53,6 +53,8 @@ public:
     QVariantList streams() const { return m_snapshot; } // GUI thread
 
     static QString statusName(Status s);
+    // Set by configure() before start(); any thread after that.
+    QString streamName(int stream) const { return stream >= 0 && stream < qp::kStreamCount ? m_streams[size_t(stream)].name : QString(); }
 
 signals:
     void changed();

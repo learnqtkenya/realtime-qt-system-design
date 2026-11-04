@@ -1,0 +1,56 @@
+{
+ "label": "mem-1g-asbuilt",
+ "limit": "1G",
+ "args": [
+  "--points",
+  "150000",
+  "--objects",
+  "200",
+  "--events",
+  "200",
+  "--set",
+  "cameras=0"
+ ],
+ "survived": false,
+ "exit": -9,
+ "diedAfterS": 12.0,
+ "series": [
+  {
+   "t": 2.0,
+   "rssMb": 285.8671875,
+   "historyMb": 72.096016,
+   "historySeconds": 0.899985473
+  },
+  {
+   "t": 4.0,
+   "rssMb": 423.71875,
+   "historyMb": 219.89344,
+   "historySeconds": 2.949349839
+  },
+  {
+   "t": 6.0,
+   "rssMb": 561.5234375,
+   "historyMb": 367.684368,
+   "historySeconds": 4.999397169
+  },
+  {
+   "t": 8.0,
+   "rssMb": 698.921875,
+   "historyMb": 510.073712,
+   "historySeconds": 6.97412336
+  },
+  {
+   "t": 10.0,
+   "rssMb": 836.5,
+   "historyMb": 654.263152,
+   "historySeconds": 8.974609731
+  },
+  {
+   "t": 12.0,
+   "rssMb": 974.375,
+   "historyMb": 796.6512,
+   "historySeconds": 10.94884927
+  }
+ ],
+ "output": []
+}

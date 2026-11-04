@@ -29,6 +29,29 @@ const char *className(quint8 cls)
 
 } // namespace
 
+bool Selection::annotate(const QString &text)
+{
+    const qp::TrackSetPtr set = m_store->latestTracks();
+    if (!set || m_trackId < 0 || !m_noteSink || text.trimmed().isEmpty())
+        return false;
+    for (const qp::Track &t : set->tracks) {
+        if (int(t.id) != m_trackId)
+            continue;
+        qp::EventRecord e;
+        e.seq = ++m_noteSeq;
+        e.captureNs = set->captureNs; // the scene the operator saw, not the wall clock
+        e.source = QStringLiteral("note");
+        e.text = QStringLiteral("#%1: %2").arg(t.id).arg(text.trimmed().left(200));
+        e.trackId = qint32(t.id);
+        e.x = t.x;
+        e.y = t.y;
+        e.anchored = true;
+        m_noteSink(e);
+        return true;
+    }
+    return false;
+}
+
 Selection::Selection(FrameStore *store, QObject *parent) : QObject(parent), m_store(store)
 {
     connect(m_store, &FrameStore::tracksChanged, this, [this] {

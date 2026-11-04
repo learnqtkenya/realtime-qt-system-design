@@ -28,6 +28,7 @@ public:
     enum class Updates { Reset, Diff };
 
     explicit TrackListModel(FrameStore *store, QObject *parent = nullptr);
+    FrameStore *store() const { return m_store; }
 
     void setUpdates(Updates updates) { m_updates = updates; }
     Updates updates() const { return m_updates; }

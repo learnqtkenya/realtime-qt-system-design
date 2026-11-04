@@ -303,6 +303,29 @@ def _step08_series():
     return s
 
 
+def _step10_series():
+    def setting(**kv):
+        return [a for k, v in kv.items() for a in ("--set", f"{k}={v}")]
+
+    nominal = ["--points", 150_000, "--rate", 10, "--objects", 200, "--events", 200, "--variant", "rhi"]
+    two = str(bench.ROOT / "scripts/cores2.sh")
+    s = {"cores": [(f"cores-{c}-cam{cam}-r{n}", [*nominal, *setting(cameras=cam)], 20, *([two] if c == "2" else []))
+                   for n in (1, 2) for c in ("16", "2") for cam in (0, 1)]}
+    peak = ["--points", 300_000, "--rate", 20, "--objects", 800, "--events", 2000, "--variant", "rhi"]
+    one = str(bench.ROOT / "scripts/cores1.sh")
+    wrap = {"16": [], "2": [two], "1": [one]}
+    s["peak-cores"] = [(f"peak-{c}-r{n}", [*peak, *setting(cameras=1)], 20, *wrap[c]) for n in (1, 2) for c in ("16", "2", "1")]
+    s["nominal-1core"] = [(f"cores-1-cam1-r{n}", [*nominal, *setting(cameras=1)], 20, one) for n in (1, 2)]
+    s["lidars"] = [(f"lidars-{k}-r{n}", [*nominal, "--sensors", k, *setting(cameras=0)], 20)
+                   for n in (1, 2) for k in (4, 8)]
+    s["lidars-record"] = [(f"lidars-{k}-record-r{n}", [*nominal, "--sensors", k, *setting(cameras=0, record=1, recordPath=bench.BUILD / f"recordings/step-10/lidars{k}.qprec")], 20)
+                          for n in (1,) for k in (4, 8)]
+    return s
+
+
+MODULES["step-10"] = ("app/viewer", ["rhi_prepare_ms", "history_add_ms", "record_lidar_encode_ms", "tracks_rebuild_ms"])
+MODULE_ENV["step-10"] = {"QSG_RHI_PROFILE": "1"}
+RATES["step-10"] = ["submitted", "uploaded"]
 MODULES["step-08"] = ("app/viewer", ["layers_sync_ms", "overlay_sync_ms", "tracks_rebuild_ms", "event_reset_ms"])
 MODULE_ENV["step-08"] = {"QSG_RHI_PROFILE": "1"}
 RATES["step-08"] = []
@@ -318,7 +341,7 @@ MODULES["step-04"] = ("app/viewer", ["history_add_ms", "seek_ms", "present_late_
 MODULE_ENV["step-04"] = {"QSG_RHI_PROFILE": "1"}
 RATES["step-04"] = ["camera_decoded", "camera_presented"]
 MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series(), "step-02": _step02_series(),
-                 "step-03": _step03_series(), "step-04": _step04_series(), "step-05": _step05_series(), "step-06": _step06_series(), "step-08": _step08_series()}
+                 "step-03": _step03_series(), "step-04": _step04_series(), "step-05": _step05_series(), "step-06": _step06_series(), "step-08": _step08_series(), "step-10": _step10_series()}
 
 EXTRA_SERIES = {
     "m03": {

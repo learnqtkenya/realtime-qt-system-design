@@ -23,6 +23,7 @@
 #include "qp_version.h"
 
 #include <QDir>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -45,6 +46,36 @@
 namespace {
 
 int g_signalPipe[2] = {-1, -1};
+
+// What this process may use: physical memory, or less if its cgroup (or a parent's) says so.
+qint64 memoryAvailableToProcess()
+{
+    qint64 limit = 0;
+    QFile meminfo(QStringLiteral("/proc/meminfo"));
+    if (meminfo.open(QIODevice::ReadOnly))
+        for (const QByteArray &line : meminfo.readAll().split('\n'))
+            if (line.startsWith("MemTotal:"))
+                limit = line.mid(9).trimmed().split(' ').value(0).toLongLong() * 1024;
+    QFile cgroup(QStringLiteral("/proc/self/cgroup"));
+    if (cgroup.open(QIODevice::ReadOnly)) {
+        const QByteArray line = cgroup.readAll().trimmed();
+        if (line.startsWith("0::")) {
+            QString dir = QStringLiteral("/sys/fs/cgroup") + QString::fromUtf8(line.mid(3));
+            for (; dir.startsWith(u"/sys/fs/cgroup"); dir = QFileInfo(dir).path()) {
+                QFile max(dir + QStringLiteral("/memory.max"));
+                if (max.open(QIODevice::ReadOnly)) {
+                    bool ok = false;
+                    const qint64 v = max.readAll().trimmed().toLongLong(&ok);
+                    if (ok && v > 0 && (limit == 0 || v < limit))
+                        limit = v;
+                }
+                if (dir == u"/sys/fs/cgroup")
+                    break;
+            }
+        }
+    }
+    return limit;
+}
 
 // SIGTERM and SIGINT end the event loop, so a viewer stopped by the system saves its layout and
 // writes its logs like one closed by the user. The handler only writes a byte (async-signal-safe).
@@ -125,6 +156,11 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
     qp::Workload requested = opts->workload();
+    // A client shows whatever the server sends: sized for the most sensors the viewer supports, not
+    // for its own command line (which once dropped half of an eight-lidar stream without a word).
+    // Sensors that never send stay "off" in health.
+    if (!opts->extra(QStringLiteral("connect")).toString().isEmpty())
+        requested.sensors = qp::kMaxSensors;
     // From step 4 on, every frame is its own allocation, as from a real sensor.
     requested.freshClouds = opts->extra(QStringLiteral("freshClouds"), true).toBool();
     requested.lidarDelayMs = opts->extra(QStringLiteral("lidarDelayMs"), 0).toDouble();
@@ -164,7 +200,16 @@ int main(int argc, char *argv[])
     QObject::connect(&mailbox, &LidarMailbox::changed, &cameras, &Cameras::lidarAdvanced, Qt::QueuedConnection);
 
     Timeline::Options timelineOptions;
-    timelineOptions.historyBytes = qint64(opts->extra(QStringLiteral("historyMb"), 1000).toDouble() * 1e6);
+    // Step 10: unless given, the history budget follows the machine: 30% of the memory this process
+    // may use, between 64 MB and 1 GB. A fixed 1 GB was killed within 12 s under a 1 GB limit.
+    const qint64 memoryMb = memoryAvailableToProcess() / 1'000'000;
+    const double historyMb = opts->extra(QStringLiteral("historyMb")).isValid()
+                                 ? opts->extra(QStringLiteral("historyMb")).toDouble()
+                                 : std::clamp(0.3 * double(memoryMb), 64.0, 1000.0);
+    timelineOptions.historyBytes = qint64(historyMb * 1e6);
+    diagnostics.note(QStringLiteral("viewer"), QStringLiteral("memory available %1 MB; history budget %2 MB")
+                                                   .arg(memoryMb)
+                                                   .arg(historyMb, 0, 'f', 0));
     timelineOptions.shape = opts->extra(QStringLiteral("historyShape")).toString() == QLatin1String("int16")
                                 ? History::Shape::Int16
                                 : History::Shape::Shared;
@@ -215,8 +260,8 @@ int main(int argc, char *argv[])
     HealthMonitor health;
     {
         const qp::Workload &w = lab.workload();
-        for (int i = 0; i < w.sensors && i < 4; ++i)
-            health.configure(qp::kLidarStream0 + i, QStringLiteral("lidar %1").arg(i), 1000.0 / w.lidarRateHz, 100);
+        for (int i = 0; i < w.sensors; ++i)
+            health.configure(qp::lidarStream(i), QStringLiteral("lidar %1").arg(i), 1000.0 / w.lidarRateHz, 100);
         health.configure(qp::kTracksStream, QStringLiteral("tracks"), 1000.0 / w.trackRateHz, 100);
         if (w.eventsPerSecond > 0)
             health.configure(qp::kEventsStream, QStringLiteral("events"), 50, 100);
@@ -225,12 +270,12 @@ int main(int argc, char *argv[])
         health.configure(qp::kGuiStream, QStringLiteral("GUI thread"), 20, 1e9);
     }
     QObject::connect(&lab, &Lab::workloadChanged, &health, [&lab, &health] {
-        for (int i = 0; i < lab.sensors() && i < 4; ++i)
-            health.setPeriod(qp::kLidarStream0 + i, 1000.0 / lab.rateHz());
+        for (int i = 0; i < lab.sensors(); ++i)
+            health.setPeriod(qp::lidarStream(i), 1000.0 / lab.rateHz());
     });
     const bool hideStale = opts->extra(QStringLiteral("stalePolicy"), QStringLiteral("hide")).toString() == QLatin1String("hide");
     std::atomic<quint64> healthSeq{0};
-    health.setStatusSink([&timeline, &hub, &healthSeq, &diagnostics, hideStale](int stream, HealthMonitor::Status,
+    health.setStatusSink([&timeline, &hub, &healthSeq, &diagnostics, &health, hideStale](int stream, HealthMonitor::Status,
                                                                                  HealthMonitor::Status to, const QString &why) {
         using S = HealthMonitor::Status;
         qp::EventRecord e;
@@ -238,15 +283,13 @@ int main(int argc, char *argv[])
         e.captureNs = qp::nowNs();
         e.severity = to == S::Stale || to == S::Corrupt ? 2 : (to == S::Ok ? 0 : 1);
         e.source = QStringLiteral("health");
-        static const char *names[] = {"lidar 0", "lidar 1", "lidar 2", "lidar 3", "tracks", "events",
-                                      "camera 0", "camera 1", "camera 2", "camera 3", "GUI thread"};
-        e.text = QStringLiteral("%1 %2%3").arg(QLatin1String(names[stream]), HealthMonitor::statusName(to),
+        e.text = QStringLiteral("%1 %2%3").arg(health.streamName(stream), HealthMonitor::statusName(to),
                                                why.isEmpty() ? QString() : QStringLiteral(": ") + why);
         timeline.ingestEvents(std::make_shared<qp::EventBatch>(qp::EventBatch{e}));
         diagnostics.note(QStringLiteral("health"), e.text);
         // Stale lidar: stop showing its last frame as if it were current.
-        if (hideStale && to == S::Stale && stream >= qp::kLidarStream0 && stream < qp::kLidarStream0 + 4)
-            hub.submit(qp::SensorFrame{stream - qp::kLidarStream0, 0, qp::nowNs(), std::make_shared<qp::PointCloud>()});
+        if (const int sensor = qp::lidarSensor(stream); hideStale && to == S::Stale && sensor >= 0)
+            hub.submit(qp::SensorFrame{sensor, 0, qp::nowNs(), std::make_shared<qp::PointCloud>()});
     });
     timeline.setHealth(&health, opts->extra(QStringLiteral("validate"), true).toBool(),
                        opts->extra(QStringLiteral("keepOrder"), true).toBool());
@@ -447,6 +490,26 @@ int main(int argc, char *argv[])
         QTimer::singleShot(int(at.value(1).toDouble() * 1000), &lab, [&lab, stream, kind] { lab.injectFault(stream, kind); });
         if (const double clear = opts->extra(QStringLiteral("faultClear"), 0).toDouble(); clear > 0)
             QTimer::singleShot(int(clear * 1000), &lab, [&lab, stream] { lab.injectFault(stream, QStringLiteral("clear")); });
+    }
+    // Step 10: operator notes are anchored events; they travel, record and replay as events do.
+    selection.setNoteSink([&timeline](const qp::EventRecord &e) {
+        timeline.ingestEvents(std::make_shared<qp::EventBatch>(qp::EventBatch{e}));
+    });
+    // --set annotateEvery=<s>: select an object and note it every <s> seconds (recordings, tests).
+    std::unique_ptr<QTimer> annotateTimer;
+    if (const double every = opts->extra(QStringLiteral("annotateEvery"), 0).toDouble(); every > 0) {
+        annotateTimer = std::make_unique<QTimer>();
+        QObject::connect(annotateTimer.get(), &QTimer::timeout, &selection, [&selection, &store] {
+            const qp::TrackSetPtr set = store.latestTracks();
+            if (!set || set->tracks.empty())
+                return;
+            static int n = 0;
+            const qp::Track &t = set->tracks[size_t(n) % set->tracks.size()];
+            selection.select(int(t.id));
+            if (selection.annotate(QStringLiteral("note %1").arg(++n)))
+                qp::StageStats::instance().add(QStringLiteral("notes_made"), 0);
+        });
+        annotateTimer->start(int(every * 1000));
     }
     // --set selectId=<id>: select an object after a second (screenshots).
     if (const int id = opts->extra(QStringLiteral("selectId"), -1).toInt(); id >= 0)

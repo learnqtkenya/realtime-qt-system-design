@@ -23,7 +23,7 @@ public:
     void stop();
     // Any time, from the owner's thread; takes effect on the simulator thread.
     void setWorkload(const Workload &workload);
-    // Any time, from the owner's thread. stream: kLidarStream0 + sensor, or kTracksStream.
+    // Any time, from the owner's thread. stream: lidarStream(sensor), or kTracksStream.
     void setFault(int stream, const Fault &fault);
 
     const Workload &workload() const { return m_workload; }

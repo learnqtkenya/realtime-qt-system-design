@@ -1,0 +1,77 @@
+{
+ "make a recording with notes (new)": {
+  "exit": 0,
+  "stderr": [],
+  "lidarPerS": 40.1,
+  "notes": 12,
+  "latencyP50": 25.083262,
+  "fps": 60.0
+ },
+ "new viewer replays its recording": {
+  "exit": 0,
+  "stderr": [],
+  "lidarPerS": 40.0,
+  "notes": 9,
+  "latencyP50": 24.7289155,
+  "fps": 60.0
+ },
+ "old viewer replays the new recording": {
+  "exit": 0,
+  "stderr": [],
+  "lidarPerS": 40.0,
+  "notes": null,
+  "latencyP50": 25.171079,
+  "fps": 60.0
+ },
+ "new viewer replays step-04 nominal-cameras-lag150.qprec": {
+  "exit": 0,
+  "stderr": [],
+  "lidarPerS": 40.1,
+  "notes": null,
+  "latencyP50": 26.0500695,
+  "fps": 60.0
+ },
+ "new viewer replays step-04 nominal-float32-raw.qprec": {
+  "exit": 0,
+  "stderr": [],
+  "lidarPerS": 40.0,
+  "notes": null,
+  "latencyP50": 25.299761,
+  "fps": 60.0
+ },
+ "new viewer replays step-04 nominal-int16planar-raw.qprec": {
+  "exit": 0,
+  "stderr": [],
+  "lidarPerS": 40.0,
+  "notes": null,
+  "latencyP50": 26.165559000000002,
+  "fps": 60.0
+ },
+ "old client, new server (notes on)": {
+  "exit": 0,
+  "stderr": [],
+  "lidarPerS": 40.0,
+  "notes": null,
+  "latencyP50": 25.633062,
+  "fps": 59.9,
+  "serverStderr": []
+ },
+ "new client, old server": {
+  "exit": 0,
+  "stderr": [],
+  "lidarPerS": 39.9,
+  "notes": null,
+  "latencyP50": 25.47484,
+  "fps": 59.9,
+  "serverStderr": []
+ },
+ "new client, new server (notes on)": {
+  "exit": 0,
+  "stderr": [],
+  "lidarPerS": 40.0,
+  "notes": 10,
+  "latencyP50": 25.977869499999997,
+  "fps": 59.9,
+  "serverStderr": []
+ }
+}

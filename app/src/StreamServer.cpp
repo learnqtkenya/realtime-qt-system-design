@@ -40,7 +40,7 @@ public:
             QByteArray record;
         };
         std::map<std::pair<int, int>, Held> latest; // (type, stream) -> newest record not yet sent
-        std::deque<QByteArray> events;
+        std::deque<std::pair<QByteArray, bool>> events; // record, holds a note (never dropped)
         qint64 sent = 0, sentAtLastTick = 0;
         qint64 replaced = 0, eventsDropped = 0, backlogMax = 0;
     };
@@ -57,7 +57,7 @@ public:
         tick->start(1000);
     }
 
-    void publish(rec::Type type, int stream, qint64 t, const std::function<QByteArray()> &encode)
+    void publish(rec::Type type, int stream, qint64 t, const std::function<QByteArray()> &encode, bool keep = false)
     {
         if (m_sessions.empty())
             return; // nobody listening: don't even encode
@@ -70,10 +70,13 @@ public:
                 s->socket->write(record);
                 s->sent += record.size();
             } else if (type == rec::Type::Events) {
-                s->events.push_back(record);
+                s->events.emplace_back(record, keep);
                 if (s->events.size() > kEventQueue) {
-                    s->events.pop_front();
-                    ++s->eventsDropped;
+                    const auto victim = std::find_if(s->events.begin(), s->events.end(), [](const auto &e) { return !e.second; });
+                    if (victim != s->events.end()) {
+                        s->events.erase(victim);
+                        ++s->eventsDropped;
+                    }
                 }
                 pump(*s);
             } else {
@@ -115,7 +118,7 @@ private:
     {
         while (s.socket->bytesToWrite() < m_highWater) {
             if (!s.events.empty()) {
-                s.sent += s.socket->write(s.events.front());
+                s.sent += s.socket->write(s.events.front().first);
                 s.events.pop_front();
                 continue;
             }
@@ -211,7 +214,8 @@ void StreamServer::publishEvents(const qp::EventBatchPtr &batch)
 {
     if (batch && !batch->empty())
         QMetaObject::invokeMethod(m_worker, [w = m_worker, batch] {
-            w->publish(rec::Type::Events, 0, batch->front().captureNs, [&] { return wire::eventsRecord(batch); });
+            const bool notes = std::any_of(batch->begin(), batch->end(), [](const qp::EventRecord &e) { return e.anchored; });
+            w->publish(rec::Type::Events, 0, batch->front().captureNs, [&] { return wire::eventsRecord(batch); }, notes);
         });
 }
 

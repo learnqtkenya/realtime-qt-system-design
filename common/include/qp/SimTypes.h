@@ -47,9 +47,24 @@ struct Fault
     bool any() const { return dropRate > 0 || delayMs > 0 || jitterMs > 0 || corrupt || stall; }
 };
 
-// Stream numbers shared by the simulator, the faults and the health monitor.
+// Stream numbers shared by the simulator, the faults and the health monitor. They are an interface
+// (command-line faults, scripts, event text): new streams are appended, never renumbered.
 enum StreamIndex { kLidarStream0 = 0, kTracksStream = 4, kEventsStream = 5, kCameraStream0 = 6, kGuiStream = 10,
-                   kStreamCount = 11 };
+                   kLidarStream4 = 11, kStreamCount = 15 };
+constexpr int kMaxSensors = 8;
+
+constexpr int lidarStream(int sensor)
+{
+    return sensor < 4 ? kLidarStream0 + sensor : kLidarStream4 + sensor - 4;
+}
+
+// The sensor of a lidar stream, or -1.
+constexpr int lidarSensor(int stream)
+{
+    return stream >= kLidarStream0 && stream < kLidarStream0 + 4 ? stream - kLidarStream0
+           : stream >= kLidarStream4 && stream < kLidarStream4 + 4 ? stream - kLidarStream4 + 4
+                                                                   : -1;
+}
 
 struct PointCloud
 {
@@ -91,6 +106,10 @@ struct EventRecord
     quint8 severity = 0; // 0 info, 1 warning, 2 error
     QString source;
     QString text;
+    // An operator's note: anchored to an object and a place, at the time of the scene it was made on.
+    qint32 trackId = -1;
+    float x = 0, y = 0;
+    bool anchored = false;
 };
 using EventBatch = std::vector<EventRecord>;
 using EventBatchPtr = std::shared_ptr<const EventBatch>;

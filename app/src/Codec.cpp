@@ -238,6 +238,11 @@ QByteArray encodeEvents(const qp::EventBatch &batch)
         w.put<quint8>(e.severity);
         w.string(e.source);
         w.string(e.text);
+        if (e.anchored) {
+            w.put<qint32>(e.trackId);
+            w.put<float>(e.x);
+            w.put<float>(e.y);
+        }
         const quint16 len = quint16(w.size() - lenAt - 2);
         std::memcpy(w.at(lenAt), &len, 2);
     }
@@ -268,6 +273,12 @@ qp::EventBatchPtr decodeEvents(quint16 version, const char *data, size_t size)
         e.text = item.string();
         if (!item.ok())
             return nullptr;
+        if (item.left() >= 12) {
+            e.trackId = item.get<qint32>();
+            e.x = item.get<float>();
+            e.y = item.get<float>();
+            e.anchored = true;
+        }
         batch->push_back(std::move(e));
     }
     return batch;

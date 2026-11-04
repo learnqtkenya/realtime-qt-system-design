@@ -23,7 +23,7 @@ enum class Type : quint16 { Lidar = 1, Tracks = 2, Events = 3, CameraMark = 4, G
 enum class LidarEncoding : quint16 { Float32 = 1, Int16 = 2, Int16Planar = 3 };
 
 constexpr quint16 kTracksVersion = 1;
-constexpr quint16 kEventsVersion = 1;
+constexpr quint16 kEventsVersion = 2; // 2: optional anchor appended to items (step 10)
 constexpr quint16 kCameraMarkVersion = 1;
 constexpr quint16 kGapVersion = 1;
 constexpr float kInt16Scale = 0.01f; // metres per step: ±327 m in 1 cm steps

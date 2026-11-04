@@ -1,0 +1,22 @@
+{
+ "4": {
+  "clientLatencyP50": 30.144581,
+  "clientLatencyP99": 40.003867,
+  "clientLidarPerS": 39.999698782268325,
+  "clientMbps": 21.937700000000007,
+  "serverStatus": [
+   "::ffff:127.0.0.1:38612 \u00b7 21.9 MB/s \u00b7 backlog 0.5 MB \u00b7 0 replaced \u00b7 0 events dropped"
+  ],
+  "stderr": []
+ },
+ "8": {
+  "clientLatencyP50": 26.836698,
+  "clientLatencyP99": 34.606922899999994,
+  "clientLidarPerS": 80.04956003961307,
+  "clientMbps": 43.79693615000001,
+  "serverStatus": [
+   "::ffff:127.0.0.1:50524 \u00b7 43.8 MB/s \u00b7 backlog 0.0 MB \u00b7 0 replaced \u00b7 0 events dropped"
+  ],
+  "stderr": []
+ }
+}

@@ -89,6 +89,8 @@ void HealthMonitor::start()
 
 void HealthMonitor::arrived(int stream, quint64 seq, qint64 captureNs)
 {
+    if (stream < 0 || stream >= qp::kStreamCount)
+        return;
     Stream &s = m_streams[size_t(stream)];
     const qint64 now = qp::nowNs();
     if (s.newSession.exchange(false, std::memory_order_relaxed))
@@ -116,11 +118,15 @@ void HealthMonitor::resetSequences()
 
 void HealthMonitor::rejected(int stream)
 {
+    if (stream < 0 || stream >= qp::kStreamCount)
+        return;
     m_streams[size_t(stream)].rejected.fetch_add(1, std::memory_order_relaxed);
 }
 
 void HealthMonitor::noteFault(int stream, const QString &kind)
 {
+    if (stream < 0 || stream >= qp::kStreamCount)
+        return;
     std::lock_guard lk(m_mutex);
     m_faultKind[size_t(stream)] = kind;
     m_faultNs[size_t(stream)] = qp::nowNs();
@@ -131,7 +137,18 @@ void HealthMonitor::evaluate()
 {
     const qint64 now = qp::nowNs();
     QVariantList rows;
-    for (size_t i = 0; i < m_streams.size(); ++i) {
+    // Shown lidars first, in sensor order (lidars 4-7 have stream numbers after the GUI thread's).
+    static const auto order = [] {
+        std::array<size_t, qp::kStreamCount> o{};
+        size_t n = 0;
+        for (int sensor = 0; sensor < qp::kMaxSensors; ++sensor)
+            o[n++] = size_t(qp::lidarStream(sensor));
+        for (int stream = 0; stream < qp::kStreamCount; ++stream)
+            if (qp::lidarSensor(stream) < 0)
+                o[n++] = size_t(stream);
+        return o;
+    }();
+    for (const size_t i : order) {
         Stream &s = m_streams[i];
         if (!s.configured)
             continue;

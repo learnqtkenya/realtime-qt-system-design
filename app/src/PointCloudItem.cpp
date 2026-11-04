@@ -36,8 +36,7 @@ void PointCloudItem::paint(QPainter *painter)
         return;
     const int64_t t0 = qp::nowNs();
 
-    static const QColor colors[4] = {QColor(0x38BDF8), QColor(0x34D399), QColor(0xFBBF24),
-                                     QColor(0xF472B6)};
+    static const QColor colors[qp::kMaxSensors] = {QColor(0x38BDF8), QColor(0x34D399), QColor(0xFBBF24), QColor(0xF472B6), QColor(0xA78BFA), QColor(0xFB923C), QColor(0x2DD4BF), QColor(0xE879F9)};
     const qreal cx = width() / 2;
     const qreal cy = height() / 2;
     const qreal s = m_pxPerMetre;
@@ -48,7 +47,7 @@ void PointCloudItem::paint(QPainter *painter)
         if (!f.cloud)
             continue;
         newest = std::max(newest, f.captureNs);
-        const QColor &c = colors[k & 3];
+        const QColor &c = colors[k % qp::kMaxSensors];
         const std::vector<float> &xyz = f.cloud->xyz;
         for (size_t i = 0; i + 2 < xyz.size(); i += 3)
             painter->fillRect(QRectF(cx + xyz[i] * s, cy - xyz[i + 1] * s, 1.5, 1.5), c);

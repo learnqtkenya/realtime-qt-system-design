@@ -17,7 +17,7 @@
 
 namespace {
 
-const QColor kColors[4] = {QColor(0x38BDF8), QColor(0x34D399), QColor(0xFBBF24), QColor(0xF472B6)};
+const QColor kColors[qp::kMaxSensors] = {QColor(0x38BDF8), QColor(0x34D399), QColor(0xFBBF24), QColor(0xF472B6), QColor(0xA78BFA), QColor(0xFB923C), QColor(0x2DD4BF), QColor(0xE879F9)};
 
 // std140 layout shared by points.vert / points.frag.
 constexpr int kOffMvp = 0, kOffColor = 64, kOffXform = 80, kOffOpacity = 96, kUniformSize = 112;
@@ -185,7 +185,7 @@ public:
             }
             char data[kUniformSize] = {};
             std::memcpy(data + kOffMvp, mvp.constData(), 64);
-            writeColorAndXform(data, kColors[i & 3], xform);
+            writeColorAndXform(data, kColors[i % qp::kMaxSensors], xform);
             std::memcpy(data + kOffOpacity, &opacity, 4);
             u->updateDynamicBuffer(s.ubuf.get(), 0, kUniformSize, data);
         }
@@ -334,7 +334,7 @@ QSGNode *SgPointsItem::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
             node->setGeometry(geometry);
             node->setFlag(QSGNode::OwnsGeometry);
             auto *material = new PointMaterial;
-            material->color = kColors[i & 3];
+            material->color = kColors[i % qp::kMaxSensors];
             node->setMaterial(material);
             node->setFlag(QSGNode::OwnsMaterial);
             root->appendChildNode(node);

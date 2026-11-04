@@ -159,12 +159,11 @@ QImage LidarPipeline::rasterise(const qp::SensorFrame &frame, const Viewport &vi
     if (!frame.cloud || viewport.width <= 0 || viewport.height <= 0)
         return {};
 
-    static const QColor colors[4] = {QColor(0x38BDF8), QColor(0x34D399), QColor(0xFBBF24),
-                                     QColor(0xF472B6)};
+    static const QColor colors[qp::kMaxSensors] = {QColor(0x38BDF8), QColor(0x34D399), QColor(0xFBBF24), QColor(0xF472B6), QColor(0xA78BFA), QColor(0xFB923C), QColor(0x2DD4BF), QColor(0xE879F9)};
     QImage image(viewport.width, viewport.height, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter(&image);
-    const QColor &c = colors[frame.sensorId & 3];
+    const QColor &c = colors[frame.sensorId % qp::kMaxSensors];
     const double cx = viewport.width / 2.0;
     const double cy = viewport.height / 2.0;
     const double s = viewport.pxPerMetre;
