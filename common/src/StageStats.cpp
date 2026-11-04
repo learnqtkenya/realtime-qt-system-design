@@ -13,7 +13,27 @@ StageStats &StageStats::instance()
 void StageStats::add(const QString &name, double value)
 {
     std::lock_guard lock(m_mutex);
-    m_samples[name].add(value);
+    auto [it, inserted] = m_samples.try_emplace(name);
+    if (inserted)
+        it->second.setCapacity(m_capacity);
+    it->second.add(value);
+}
+
+void StageStats::setCapacity(size_t capacity)
+{
+    std::lock_guard lock(m_mutex);
+    m_capacity = capacity;
+    for (auto &[name, s] : m_samples)
+        s.setCapacity(capacity);
+}
+
+size_t StageStats::storedValues() const
+{
+    std::lock_guard lock(m_mutex);
+    size_t n = 0;
+    for (const auto &[name, s] : m_samples)
+        n += s.count();
+    return n;
 }
 
 void StageStats::reset()

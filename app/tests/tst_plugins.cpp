@@ -34,11 +34,13 @@ class TstPlugins : public QObject
         const QString d = m_dir.filePath(QStringLiteral("p/") + id);
         QDir().mkpath(d);
         QFile m(d + QStringLiteral("/plugin.json"));
-        m.open(QIODevice::WriteOnly);
+        if (!m.open(QIODevice::WriteOnly))
+            qFatal("cannot write %s", qPrintable(m.fileName()));
         m.write(manifest);
         if (!file.isEmpty()) {
             QFile f(d + u'/' + file);
-            f.open(QIODevice::WriteOnly);
+            if (!f.open(QIODevice::WriteOnly))
+                qFatal("cannot write %s", qPrintable(f.fileName()));
             f.write(code);
         }
         return d;
@@ -119,10 +121,12 @@ private slots:
             const QString d = root + u'/' + id;
             QDir().mkpath(d);
             QFile m(d + QStringLiteral("/plugin.json"));
-            m.open(QIODevice::WriteOnly);
+            if (!m.open(QIODevice::WriteOnly))
+                qFatal("cannot write %s", qPrintable(m.fileName()));
             m.write(script(id, api));
             QFile f(d + QStringLiteral("/layer.mjs"));
-            f.open(QIODevice::WriteOnly);
+            if (!f.open(QIODevice::WriteOnly))
+                qFatal("cannot write %s", qPrintable(f.fileName()));
             f.write("export function update() {}");
         };
         make(QStringLiteral("v10"), "1.0");
@@ -351,7 +355,8 @@ private slots:
         const QString d = m_dir.filePath(QStringLiteral("crash"));
         QDir().mkpath(d + QStringLiteral("/c"));
         QFile m(d + QStringLiteral("/c/plugin.json"));
-        m.open(QIODevice::WriteOnly);
+        if (!m.open(QIODevice::WriteOnly))
+            qFatal("cannot write %s", qPrintable(m.fileName()));
         m.write(QByteArray("{\"id\":\"c\",\"kind\":\"process\",\"api\":\"1.0\",\"exec\":[\"python3\",\"-I\",\"") + PLUGINS_LAB_DIR
                 + "/misbehave.py\",\"crash\",\"2\"]}");
         m.close();

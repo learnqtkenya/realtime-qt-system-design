@@ -13,6 +13,14 @@ class RunningSamples
 public:
     void add(double v)
     {
+        ++m_added;
+        if (m_capacity > 0 && m_values.size() == m_capacity) {
+            // A window of the newest values: the oldest is replaced.
+            m_sum += v - m_values[m_next];
+            m_values[m_next] = v;
+            m_next = (m_next + 1) % m_capacity;
+            return;
+        }
         m_values.push_back(v);
         m_sum += v;
     }
@@ -21,7 +29,23 @@ public:
     {
         m_values.clear();
         m_sum = 0;
+        m_next = 0;
+        m_added = 0;
     }
+
+    // 0: keep every value (benchmarks: exact percentiles over a bounded run).
+    void setCapacity(size_t capacity)
+    {
+        m_capacity = capacity;
+        if (capacity > 0 && m_values.size() > capacity) {
+            m_values.erase(m_values.begin(), m_values.end() - qsizetype(capacity));
+            m_sum = 0;
+            for (double v : m_values)
+                m_sum += v;
+            m_next = 0;
+        }
+    }
+    size_t added() const { return m_added; }
 
     size_t count() const { return m_values.size(); }
     bool empty() const { return m_values.empty(); }
@@ -67,6 +91,7 @@ public:
 private:
     std::vector<double> m_values;
     double m_sum = 0;
+    size_t m_capacity = 0, m_next = 0, m_added = 0;
 };
 
 } // namespace qp

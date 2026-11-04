@@ -1,0 +1,4 @@
+{"category":"viewer","level":"info","msg":"started step-08-2-g2f6e27b-dirty (build tree), Qt 6.12.0","t":"2026-11-04T08:54:55.944Z"}
+{"category":"viewer","level":"info","msg":"asked to stop by a signal","t":"2026-11-04T09:54:56.510Z"}
+{"category":"diagnostics","level":"info","msg":"bundle saved to /home/user/Documents/Qt/QtQMLPro/results/step-09/raw/soak-client-bundle.json","t":"2026-11-04T09:54:56.520Z"}
+{"category":"viewer","level":"info","msg":"stopped (exit 0)","t":"2026-11-04T09:54:56.521Z"}

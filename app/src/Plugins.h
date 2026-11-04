@@ -87,6 +87,7 @@ class PluginHost : public QObject
     Q_PROPERTY(QString api READ api CONSTANT FINAL)
     Q_PROPERTY(QQuickItem *itemContainer READ itemContainer WRITE setItemContainer NOTIFY itemContainerChanged FINAL)
     Q_PROPERTY(double pxPerMetre READ pxPerMetre WRITE setPxPerMetre NOTIFY pxPerMetreChanged FINAL)
+    Q_PROPERTY(QStringList enabledLayers READ enabledLayers WRITE setEnabledLayers NOTIFY enabledLayersChanged FINAL)
 
 public:
     static constexpr int kApiMajor = 1;
@@ -121,6 +122,8 @@ public:
     void setPxPerMetre(double v);
     Q_INVOKABLE void setEnabled(const QString &id, bool on);
     Layer *layer(const QString &id) const;
+    QStringList enabledLayers() const;
+    void setEnabledLayers(const QStringList &ids);
 
     // For LayerOverlay (GUI thread or render thread with the GUI blocked).
     struct Drawn
@@ -153,6 +156,7 @@ signals:
     void overlaysChanged();
     void itemContainerChanged();
     void pxPerMetreChanged();
+    void enabledLayersChanged();
 
 private:
     void scan();

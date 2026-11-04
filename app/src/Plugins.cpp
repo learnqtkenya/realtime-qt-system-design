@@ -259,6 +259,22 @@ void PluginHost::setEnabled(const QString &id, bool on)
     m_dirty = true;
     refresh();
     emit overlaysChanged();
+    emit enabledLayersChanged();
+}
+
+QStringList PluginHost::enabledLayers() const
+{
+    QStringList ids;
+    for (const auto &l : m_layers)
+        if (m_enabled.at(l.get()))
+            ids << l->manifest().id;
+    return ids;
+}
+
+void PluginHost::setEnabledLayers(const QStringList &ids)
+{
+    for (const auto &l : m_layers)
+        setEnabled(l->manifest().id, ids.contains(l->manifest().id));
 }
 
 void PluginHost::setItemContainer(QQuickItem *item)

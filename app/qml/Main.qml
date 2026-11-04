@@ -62,6 +62,14 @@ ApplicationWindow {
         sequence: "R"
         onActivated: Timeline.toggleRecording()
     }
+    Shortcut {
+        sequence: "F2"
+        onActivated: Workspace.dataPanel = !Workspace.dataPanel
+    }
+    Shortcut {
+        sequence: "F3"
+        onActivated: Workspace.labPanel = !Workspace.labPanel
+    }
 
     DataPanel {
         id: dataPanel
@@ -70,13 +78,13 @@ ApplicationWindow {
         y: 0
         width: 360
         height: root.height
-        visible: AppOptions.flag("dataPanel", true)
+        visible: Workspace.dataPanel
     }
 
     Viewport {
         x: dataPanel.visible ? dataPanel.width : 0
         y: 0
-        width: root.width - panel.width - x
+        width: root.width - (panel.visible ? panel.width : 0) - x
         height: root.height
         monitor: frameMonitor
     }
@@ -88,6 +96,7 @@ ApplicationWindow {
         y: 0
         width: 380
         height: root.height
+        visible: Workspace.labPanel
         monitor: frameMonitor
     }
 

@@ -1,0 +1,306 @@
+{
+    "arguments": [
+        "/home/user/Documents/Qt/QtQMLPro/build/package/bin/viewer",
+        "--set",
+        "layout=0",
+        "--set",
+        "bundleOnExit=/home/user/Documents/Qt/QtQMLPro/results/step-09/raw/startup-package-1.json",
+        "--points",
+        "150000",
+        "--objects",
+        "200",
+        "--events",
+        "200"
+    ],
+    "build": {
+        "executable": "/home/user/Documents/Qt/QtQMLPro/build/package/bin/viewer",
+        "installed": true,
+        "pluginApi": "1.1",
+        "qt": "6.12.0",
+        "version": "step-08-3-gdd3b855-dirty"
+    },
+    "environment": {
+        "DISPLAY": ":0",
+        "LANG": "en_US.UTF-8",
+        "QSG_RHI_PROFILE": "1",
+        "QT_ACCESSIBILITY": "1",
+        "QT_WAYLAND_RECONNECT": "1",
+        "WAYLAND_DISPLAY": "wayland-0",
+        "XDG_SESSION_TYPE": "wayland"
+    },
+    "healthDetail": [
+        {
+            "ageMs": 98.875457,
+            "dropPct": 0,
+            "hz": 9.80270548534902,
+            "latencyMs": 1.4631593,
+            "name": "lidar 0",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 0,
+            "why": ""
+        },
+        {
+            "ageMs": 73.159297,
+            "dropPct": 0,
+            "hz": 9.80270548534902,
+            "latencyMs": 1.3170405,
+            "name": "lidar 1",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 1,
+            "why": ""
+        },
+        {
+            "ageMs": 47.569778,
+            "dropPct": 0,
+            "hz": 9.80270548534902,
+            "latencyMs": 1.2611059,
+            "name": "lidar 2",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 2,
+            "why": ""
+        },
+        {
+            "ageMs": 23.050362,
+            "dropPct": 0,
+            "hz": 9.80270548534902,
+            "latencyMs": 1.298293,
+            "name": "lidar 3",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 3,
+            "why": ""
+        },
+        {
+            "ageMs": 99.769042,
+            "dropPct": 0,
+            "hz": 9.80270548534902,
+            "latencyMs": 0.029276,
+            "name": "tracks",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 4,
+            "why": ""
+        },
+        {
+            "ageMs": 48.837788,
+            "dropPct": 0,
+            "hz": 19.60541097069804,
+            "latencyMs": 0.008941649999999999,
+            "name": "events",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 5,
+            "why": ""
+        },
+        {
+            "ageMs": 6.268043,
+            "dropPct": 0,
+            "hz": 30.388387004581958,
+            "latencyMs": 0.6194143225806452,
+            "name": "camera 0",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 6,
+            "why": ""
+        },
+        {
+            "ageMs": 6.134858,
+            "dropPct": 0,
+            "hz": 30.388387004581958,
+            "latencyMs": 0.6011322580645161,
+            "name": "camera 1",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 7,
+            "why": ""
+        },
+        {
+            "ageMs": 6.91644,
+            "dropPct": 0,
+            "hz": 30.388387004581958,
+            "latencyMs": 0.5446568387096774,
+            "name": "camera 2",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 8,
+            "why": ""
+        },
+        {
+            "ageMs": 6.296938,
+            "dropPct": 0,
+            "hz": 30.388387004581958,
+            "latencyMs": 0.5594910322580645,
+            "name": "camera 3",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 9,
+            "why": ""
+        },
+        {
+            "ageMs": 19.560321,
+            "dropPct": 0,
+            "hz": 49.993797975279996,
+            "latencyMs": 0.0001663921568627451,
+            "name": "GUI thread",
+            "rejected": 0,
+            "reordered": 0,
+            "status": "ok",
+            "stream": 10,
+            "why": ""
+        }
+    ],
+    "layersDetail": [
+        {
+            "api": "1.0",
+            "cost": "",
+            "detail": "",
+            "enabled": false,
+            "id": "geofence",
+            "kind": "process",
+            "name": "Geofence",
+            "status": "off"
+        },
+        {
+            "api": "1.1",
+            "cost": "",
+            "detail": "",
+            "enabled": false,
+            "id": "range-rings",
+            "kind": "script",
+            "name": "Range rings",
+            "status": "off"
+        },
+        {
+            "api": "1.0",
+            "cost": "",
+            "detail": "",
+            "enabled": false,
+            "id": "speed-vectors",
+            "kind": "script",
+            "name": "Speed vectors",
+            "status": "off"
+        },
+        {
+            "api": "1.0",
+            "cost": "",
+            "detail": "",
+            "enabled": false,
+            "id": "speed-vectors-cpp",
+            "kind": "process",
+            "name": "Speed vectors (C++ process)",
+            "status": "off"
+        },
+        {
+            "api": "1.0",
+            "cost": "",
+            "detail": "",
+            "enabled": false,
+            "id": "speed-vectors-item",
+            "kind": "item",
+            "name": "Speed vectors (item)",
+            "status": "off"
+        },
+        {
+            "api": "1.0",
+            "cost": "",
+            "detail": "",
+            "enabled": false,
+            "id": "speed-vectors-py",
+            "kind": "process",
+            "name": "Speed vectors (Python process)",
+            "status": "off"
+        }
+    ],
+    "layout": {
+        "contents": {
+        },
+        "path": "",
+        "status": "not saved (benchmark or --set layout=0)"
+    },
+    "log": [
+        "{\"category\":\"viewer\",\"level\":\"info\",\"msg\":\"started step-08-3-gdd3b855-dirty (installed), Qt 6.12.0\",\"t\":\"2026-11-04T09:59:00.798Z\"}",
+        "{\"category\":\"viewer\",\"level\":\"info\",\"msg\":\"asked to stop by a signal\",\"t\":\"2026-11-04T09:59:04.768Z\"}"
+    ],
+    "savedAt": "2026-11-04T09:59:04.774Z",
+    "state": {
+        "diagnostics": {
+            "sampleMs": 2.073257
+        },
+        "frames": {
+            "fps": 59.95470859435069,
+            "frameMsMax": 17.370863,
+            "frameMsP99": 17.234259119999997,
+            "gpuMsMean": 1.89311695,
+            "graphicsApi": "opengl",
+            "guiCpuPercent": 7.4445573883779534,
+            "lagMsMax": 7.806274999999999,
+            "lagMsP99": 3.50454122,
+            "latencyMsMax": 30.952955,
+            "latencyMsMean": 26.142024975000005,
+            "slowFrames": 0
+        },
+        "health": {
+            "GUI thread": "ok",
+            "camera 0": "ok",
+            "camera 1": "ok",
+            "camera 2": "ok",
+            "camera 3": "ok",
+            "events": "ok",
+            "lidar 0": "ok",
+            "lidar 1": "ok",
+            "lidar 2": "ok",
+            "lidar 3": "ok",
+            "notOk": 0,
+            "tracks": "ok"
+        },
+        "layers": {
+            "enabled": 0,
+            "failing": 0
+        },
+        "network": {
+            "peers": 0,
+            "role": "off",
+            "status": [
+            ]
+        },
+        "process": {
+            "cpuPercent": 38.98037587549074,
+            "heapFreeMb": 31.605296,
+            "heapInUseMb": 521.72744,
+            "mmapMb": 5.40672,
+            "openFiles": 55,
+            "rssMb": 663.875,
+            "threads": 136,
+            "uptimeS": 3.14000000001397
+        },
+        "stages": {
+            "storedValues": 2802
+        },
+        "startup": {
+            "firstFrameMs": 250,
+            "mainMs": 20.00000001862645,
+            "qmlLoadedMs": 180.0000000221189
+        },
+        "timeline": {
+            "eventsKept": 600,
+            "historyMb": 207.308912,
+            "historySeconds": 2.783156136,
+            "mode": "live",
+            "recordMb": 0,
+            "recording": false
+        }
+    }
+}

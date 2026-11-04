@@ -1,0 +1,202 @@
+[
+ {
+  "where": "build tree",
+  "run": 0,
+  "firstFrameMs": 250,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 654.0234375
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 0,
+  "firstFrameMs": 250,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 675.3125
+ },
+ {
+  "where": "build tree",
+  "run": 1,
+  "firstFrameMs": 250,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 673.15234375
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 1,
+  "firstFrameMs": 250,
+  "mainMs": 20.00000001862645,
+  "qmlLoadedMs": 180.0000000221189,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 663.875
+ },
+ {
+  "where": "build tree",
+  "run": 2,
+  "firstFrameMs": 250,
+  "mainMs": 10.000000009313226,
+  "qmlLoadedMs": 170.00000001280569,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 724.3203125
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 2,
+  "firstFrameMs": 260.0000000093132,
+  "mainMs": 20.00000001862645,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 676.11328125
+ },
+ {
+  "where": "build tree",
+  "run": 3,
+  "firstFrameMs": 250,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 668.03125
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 3,
+  "firstFrameMs": 250,
+  "mainMs": 20.00000001862645,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 656.328125
+ },
+ {
+  "where": "build tree",
+  "run": 4,
+  "firstFrameMs": 270.00000001862645,
+  "mainMs": 20.00000001862645,
+  "qmlLoadedMs": 200.00000001164153,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 674.82421875
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 4,
+  "firstFrameMs": 250,
+  "mainMs": 20.00000001862645,
+  "qmlLoadedMs": 180.0000000221189,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 673.73828125
+ },
+ {
+  "where": "build tree",
+  "run": 5,
+  "firstFrameMs": 250,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 663.453125
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 5,
+  "firstFrameMs": 270.00000001862645,
+  "mainMs": 20.00000001862645,
+  "qmlLoadedMs": 190.0000000023283,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 655.2265625
+ },
+ {
+  "where": "build tree",
+  "run": 6,
+  "firstFrameMs": 259.9999999802094,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 189.99999997322448,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 674.4375
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 6,
+  "firstFrameMs": 260.0000000093132,
+  "mainMs": 20.00000001862645,
+  "qmlLoadedMs": 190.0000000023283,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 666.796875
+ },
+ {
+  "where": "build tree",
+  "run": 7,
+  "firstFrameMs": 259.9999999802094,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 654.703125
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 7,
+  "firstFrameMs": 250,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 675.3203125
+ },
+ {
+  "where": "build tree",
+  "run": 8,
+  "firstFrameMs": 250,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 671.54296875
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 8,
+  "firstFrameMs": 270.00000001862645,
+  "mainMs": 20.00000001862645,
+  "qmlLoadedMs": 200.00000001164153,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 659.87109375
+ },
+ {
+  "where": "build tree",
+  "run": 9,
+  "firstFrameMs": 250,
+  "mainMs": 20.00000001862645,
+  "qmlLoadedMs": 170.00000001280569,
+  "exit": 0,
+  "stderr": "",
+  "rssMb": 655.5
+ },
+ {
+  "where": "package, /opt/Qt hidden",
+  "run": 9,
+  "firstFrameMs": 250,
+  "mainMs": 19.99999998952262,
+  "qmlLoadedMs": 179.99999999301508,
+  "exit": -15,
+  "stderr": "",
+  "rssMb": 676.53125
+ }
+]

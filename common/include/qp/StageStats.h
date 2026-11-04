@@ -21,10 +21,14 @@ public:
     void add(const QString &name, double value);
     void reset();
     QJsonObject toJson() const;
+    // Values kept per stage; 0 keeps all of them (benchmarks, which are bounded runs).
+    void setCapacity(size_t capacity);
+    size_t storedValues() const;
 
 private:
     mutable std::mutex m_mutex;
     std::map<QString, RunningSamples> m_samples;
+    size_t m_capacity = 0;
 };
 
 class Stages : public QObject

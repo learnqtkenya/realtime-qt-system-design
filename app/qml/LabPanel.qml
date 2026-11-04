@@ -389,6 +389,42 @@ Rectangle {
             }
 
             SectionTitle {
+                text: "Diagnostics"
+            }
+            Caption {
+                id: diagnosticsText
+
+                readonly property var d: Diagnostics.snapshot
+                readonly property var p: d.process ?? {}
+                readonly property var st: d.startup ?? {}
+
+                function clock(s: real): string {
+                    const h = Math.floor(s / 3600);
+                    const m = Math.floor(s / 60) % 60;
+                    return h + ":" + String(m).padStart(2, "0") + ":" + String(Math.floor(s) % 60).padStart(2, "0");
+                }
+
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: (Application.version + " · " + (d.frames?.graphicsApi ?? "") + "\n") + "up " + clock(p.uptimeS ?? 0) + " · RSS " + (p.rssMb ?? 0).toFixed(0) + " MB · heap " + (p.heapInUseMb ?? 0).toFixed(0) + " MB · " + (p.threads ?? 0) + " threads · " + (p.openFiles ?? 0) + " files\n" + "first frame " + (st.firstFrameMs ?? 0).toFixed(0) + " ms after start (main at " + (st.mainMs ?? 0).toFixed(0) + " ms)\n" + "layout: " + Workspace.status + "  (F2, F3: panels)" + (Diagnostics.metricsUrl ? "\nmetrics: " + Diagnostics.metricsUrl : "")
+            }
+            RowLayout {
+                Layout.fillWidth: true
+
+                Button {
+                    text: "Save diagnostic bundle"
+                    onClicked: bundleSaved.text = "saved " + Diagnostics.saveBundle()
+                }
+            }
+            Caption {
+                id: bundleSaved
+
+                visible: text !== ""
+                Layout.fillWidth: true
+                wrapMode: Text.WrapAnywhere
+            }
+
+            SectionTitle {
                 visible: Network.role !== "client"
                 text: "Faults"
             }

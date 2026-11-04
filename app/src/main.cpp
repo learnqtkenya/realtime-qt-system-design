@@ -1,4 +1,5 @@
 #include "Cameras.h"
+#include "Diagnostics.h"
 #include "CanvasFeed.h"
 #include "EventLogModel.h"
 #include "FrameStore.h"
@@ -6,6 +7,7 @@
 #include "InputRobot.h"
 #include "Lab.h"
 #include "LayerOverlay.h"
+#include "LayoutStore.h"
 #include "LidarHub.h"
 #include "LidarMailbox.h"
 #include "LidarPipeline.h"
@@ -17,7 +19,10 @@
 #include "TrackListModel.h"
 #include "qp/AppOptions.h"
 #include "qp/SensorSimulator.h"
+#include "qp/StageStats.h"
+#include "qp_version.h"
 
+#include <QDir>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -26,13 +31,34 @@
 #include <QQuickItem>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <QTimer>
 
+#include <QSocketNotifier>
+
+#include <csignal>
 #include <memory>
+#include <sys/socket.h>
+#include <unistd.h>
+
+namespace {
+
+int g_signalPipe[2] = {-1, -1};
+
+// SIGTERM and SIGINT end the event loop, so a viewer stopped by the system saves its layout and
+// writes its logs like one closed by the user. The handler only writes a byte (async-signal-safe).
+void onSignal(int)
+{
+    const char c = 1;
+    [[maybe_unused]] const auto n = ::write(g_signalPipe[0], &c, 1);
+}
+
+} // namespace
 
 int main(int argc, char *argv[])
 {
+    const double startedMainMs = Diagnostics::msSinceProcessStart();
     // GPU timestamps feed the lab panel's GPU chart; --set gpuTiming=0 turns them off.
     bool gpuTiming = true;
     for (int i = 1; i + 1 < argc; ++i)
@@ -62,9 +88,34 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
     QGuiApplication::setApplicationName(QStringLiteral("QtQMLPro Perception Viewer"));
+    QGuiApplication::setOrganizationName(QStringLiteral("QtQMLPro"));
+    QGuiApplication::setApplicationVersion(QStringLiteral(QP_GIT_VERSION));
     qp::AppOptions *opts = qp::AppOptions::instance();
     if (!opts->parse(app.arguments()))
         return 2;
+    auto given = [opts](const char *key) { return opts->extra(QString::fromLatin1(key)).isValid(); };
+
+    // Step 9: an installed viewer reads from share/qtqmlpro and writes where the user may write; a
+    // build-tree viewer keeps everything next to itself.
+    const QString appDir = QCoreApplication::applicationDirPath();
+    const bool installed = QDir(appDir + QStringLiteral("/../share/qtqmlpro")).exists();
+    const QString shareDir = installed ? QDir::cleanPath(appDir + QStringLiteral("/../share/qtqmlpro"))
+                                       : QDir::cleanPath(appDir + QStringLiteral("/.."));
+    const QString writableDir = installed ? QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)
+                                          : QDir::cleanPath(appDir + QStringLiteral("/.."));
+    // Outside benchmarks the stage statistics are a window of the newest values per stage
+    // (--set stageCap=<n>, 0: keep everything); a benchmark keeps all, over its bounded run.
+    if (!opts->bench())
+        qp::StageStats::instance().setCapacity(size_t(opts->extra(QStringLiteral("stageCap"), 10'000).toLongLong()));
+    Diagnostics diagnostics;
+    if (opts->extra(QStringLiteral("log"), true).toBool())
+        diagnostics.installLog(opts->extra(QStringLiteral("logDir"), writableDir + QStringLiteral("/logs")).toString());
+    diagnostics.setBundleDir(writableDir + QStringLiteral("/bundles"));
+    diagnostics.setStartup(QStringLiteral("mainMs"), startedMainMs);
+    diagnostics.note(QStringLiteral("viewer"), QStringLiteral("started %1 (%2), Qt %3")
+                                                   .arg(QStringLiteral(QP_GIT_VERSION),
+                                                        installed ? QStringLiteral("installed") : QStringLiteral("build tree"),
+                                                        QString::fromLatin1(qVersion())));
     if (!opts->variant().isEmpty() && !Lab::rendererIds().contains(opts->variant())) {
         QTextStream(stderr) << "invalid --variant: " << opts->variant() << " ("
                             << Lab::rendererIds().join(u'|') << ")\n";
@@ -105,8 +156,7 @@ int main(int argc, char *argv[])
     lab.setViewMode(opts->extra(QStringLiteral("view"), QStringLiteral("top")).toString());
     lab.setLodEnabled(opts->extra(QStringLiteral("lod"), true).toBool());
     Selection selection(&store);
-    Cameras cameras(opts->extra(QStringLiteral("mediaDir"), QCoreApplication::applicationDirPath() + QStringLiteral("/../media"))
-                        .toString(),
+    Cameras cameras(opts->extra(QStringLiteral("mediaDir"), shareDir + QStringLiteral("/media")).toString(),
                     &hub, decoder);
     cameras.setPath(opts->extra(QStringLiteral("cameraPath"), QStringLiteral("forward")).toString());
     cameras.setSync(opts->extra(QStringLiteral("cameraSync"), QStringLiteral("latest")).toString());
@@ -118,7 +168,7 @@ int main(int argc, char *argv[])
     timelineOptions.shape = opts->extra(QStringLiteral("historyShape")).toString() == QLatin1String("int16")
                                 ? History::Shape::Int16
                                 : History::Shape::Shared;
-    timelineOptions.recordDir = QCoreApplication::applicationDirPath() + QStringLiteral("/../recordings");
+    timelineOptions.recordDir = writableDir + QStringLiteral("/recordings");
     const QString recordEncoding = opts->extra(QStringLiteral("recordEncoding"), QStringLiteral("int16planar")).toString();
     timelineOptions.writer.lidar = recordEncoding == QLatin1String("float32") ? rec::LidarEncoding::Float32
                                    : recordEncoding == QLatin1String("int16") ? rec::LidarEncoding::Int16
@@ -180,8 +230,8 @@ int main(int argc, char *argv[])
     });
     const bool hideStale = opts->extra(QStringLiteral("stalePolicy"), QStringLiteral("hide")).toString() == QLatin1String("hide");
     std::atomic<quint64> healthSeq{0};
-    health.setStatusSink([&timeline, &hub, &healthSeq, hideStale](int stream, HealthMonitor::Status, HealthMonitor::Status to,
-                                                                   const QString &why) {
+    health.setStatusSink([&timeline, &hub, &healthSeq, &diagnostics, hideStale](int stream, HealthMonitor::Status,
+                                                                                 HealthMonitor::Status to, const QString &why) {
         using S = HealthMonitor::Status;
         qp::EventRecord e;
         e.seq = ++healthSeq;
@@ -193,6 +243,7 @@ int main(int argc, char *argv[])
         e.text = QStringLiteral("%1 %2%3").arg(QLatin1String(names[stream]), HealthMonitor::statusName(to),
                                                why.isEmpty() ? QString() : QStringLiteral(": ") + why);
         timeline.ingestEvents(std::make_shared<qp::EventBatch>(qp::EventBatch{e}));
+        diagnostics.note(QStringLiteral("health"), e.text);
         // Stale lidar: stop showing its last frame as if it were current.
         if (hideStale && to == S::Stale && stream >= qp::kLidarStream0 && stream < qp::kLidarStream0 + 4)
             hub.submit(qp::SensorFrame{stream - qp::kLidarStream0, 0, qp::nowNs(), std::make_shared<qp::PointCloud>()});
@@ -306,12 +357,11 @@ int main(int argc, char *argv[])
     // --set scriptThread=worker|gui --set sandbox=1
     PluginHost::Options pluginOptions;
     {
-        const QString appDir = QCoreApplication::applicationDirPath();
-        pluginOptions.dirs = opts->extra(QStringLiteral("pluginDir"), appDir + QStringLiteral("/../plugins"))
+        pluginOptions.dirs = opts->extra(QStringLiteral("pluginDir"), shareDir + QStringLiteral("/plugins"))
                                  .toString()
                                  .split(u',', Qt::SkipEmptyParts);
         if (opts->extra(QStringLiteral("labPlugins"), false).toBool())
-            pluginOptions.dirs << appDir + QStringLiteral("/../plugins-lab");
+            pluginOptions.dirs << shareDir + QStringLiteral("/plugins-lab");
         pluginOptions.enabled = opts->extra(QStringLiteral("layers")).toString().split(u',', Qt::SkipEmptyParts);
         pluginOptions.scriptOnGui = opts->extra(QStringLiteral("scriptThread"), QStringLiteral("worker")).toString()
                                     == QLatin1String("gui");
@@ -325,7 +375,7 @@ int main(int argc, char *argv[])
     }
     std::atomic<quint64> pluginSeq{0};
     PluginHost plugins(&store, &selection, &tracks, pluginOptions,
-                       [&timeline, &pluginSeq](const QString &source, const QString &text, int severity) {
+                       [&timeline, &pluginSeq, &diagnostics](const QString &source, const QString &text, int severity) {
                            qp::EventRecord e;
                            e.seq = ++pluginSeq;
                            e.captureNs = qp::nowNs();
@@ -333,6 +383,8 @@ int main(int argc, char *argv[])
                            e.source = source;
                            e.text = text;
                            timeline.ingestEvents(std::make_shared<qp::EventBatch>(qp::EventBatch{e}));
+                           if (severity > 0)
+                               diagnostics.note(source, text);
                        });
 
     Scene scene({&store, &pipeline, &mailbox, &canvasFeed, &tracks, &events, &objectTable, eventLog});
@@ -344,6 +396,19 @@ int main(int argc, char *argv[])
     QJSEngine::setObjectOwnership(&health, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&network, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&plugins, QJSEngine::CppOwnership);
+    QJSEngine::setObjectOwnership(&diagnostics, QJSEngine::CppOwnership);
+
+    // --set layout=0 or a benchmark: nothing is restored or saved. --set layoutFile=<file>.
+    const bool keepLayout = !opts->bench() && opts->extra(QStringLiteral("layout"), true).toBool();
+    LayoutStore layout(keepLayout ? opts->extra(QStringLiteral("layoutFile"),
+                                                QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
+                                                    + QStringLiteral("/layout.json"))
+                                        .toString()
+                                  : QString());
+    QJSEngine::setObjectOwnership(&layout, QJSEngine::CppOwnership);
+    layout.load();
+    layout.setDataPanel(opts->extra(QStringLiteral("dataPanel"), true).toBool());
+    layout.setLabPanel(opts->extra(QStringLiteral("labPanel"), true).toBool());
 
     QQmlApplicationEngine engine;
     QObject::connect(
@@ -357,10 +422,21 @@ int main(int argc, char *argv[])
     engine.setExternalSingletonInstance("Viewer", "Health", &health);
     engine.setExternalSingletonInstance("Viewer", "Network", &network);
     engine.setExternalSingletonInstance("Viewer", "Plugins", &plugins);
+    engine.setExternalSingletonInstance("Viewer", "Diagnostics", &diagnostics);
+    engine.setExternalSingletonInstance("Viewer", "Workspace", &layout);
+    layout.track(&layout, "dataPanel", QStringLiteral("dataPanel"), given("dataPanel"));
+    layout.track(&layout, "labPanel", QStringLiteral("labPanel"), given("labPanel"));
+    layout.track(&lab, "viewMode", QStringLiteral("view"), given("view"));
+    layout.track(&lab, "renderer", QStringLiteral("renderer"), !opts->variant().isEmpty());
+    layout.track(&lab, "lodEnabled", QStringLiteral("lod"), given("lod"));
+    layout.track(&timeline, "delayMs", QStringLiteral("delayMs"), given("delayMs"));
     engine.loadFromModule("Viewer", "Main");
+    diagnostics.setStartup(QStringLiteral("qmlLoadedMs"), Diagnostics::msSinceProcessStart());
     plugins.start();
+    layout.track(&plugins, "enabledLayers", QStringLiteral("layers"), given("layers"));
     // Started after the window exists, so the panels have their sinks.
     cameras.setEnabled(opts->extra(QStringLiteral("cameras"), true).toBool());
+    layout.track(&cameras, "enabled", QStringLiteral("cameras"), given("cameras"));
 
     // --set fault=<stream>:<kind>@<s> [--set faultClear=<s>]: inject a fault (and clear it) on schedule.
     if (const QString fault = opts->extra(QStringLiteral("fault")).toString(); !fault.isEmpty()) {
@@ -395,6 +471,100 @@ int main(int argc, char *argv[])
     std::unique_ptr<InputRobot> robot;
     const QString robotMode = opts->extra(QStringLiteral("robot")).toString();
     auto *window = engine.rootObjects().isEmpty() ? nullptr : qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    if (window) {
+        layout.track(window, "width", QStringLiteral("windowWidth"), opts->bench());
+        layout.track(window, "height", QStringLiteral("windowHeight"), opts->bench());
+        auto first = std::make_shared<QMetaObject::Connection>();
+        *first = QObject::connect(window, &QQuickWindow::frameSwapped, &diagnostics, [&diagnostics, first] {
+            diagnostics.setStartup(QStringLiteral("firstFrameMs"), Diagnostics::msSinceProcessStart());
+            QObject::disconnect(*first);
+        });
+    }
+
+    // Step 9: what the diagnostics view, the metrics endpoint and a bundle report.
+    {
+        QJsonObject build{{"version", QStringLiteral(QP_GIT_VERSION)},
+                          {"qt", QString::fromLatin1(qVersion())},
+                          {"installed", installed},
+                          {"executable", QCoreApplication::applicationFilePath()},
+                          {"pluginApi", plugins.api()}};
+        diagnostics.setBuild(build);
+        QObject *monitor = nullptr;
+        for (QObject *o : window ? window->findChildren<QObject *>() : QList<QObject *>())
+            if (o->inherits("qp::FrameMonitor"))
+                monitor = o;
+        diagnostics.addSection(QStringLiteral("frames"), [monitor] {
+            QJsonObject o;
+            if (!monitor)
+                return o;
+            for (const char *p : {"fps", "frameMsP99", "frameMsMax", "lagMsP99", "lagMsMax", "slowFrames", "latencyMsMean",
+                                  "latencyMsMax", "gpuMsMean", "guiCpuPercent"})
+                o[QLatin1String(p)] = monitor->property(p).toDouble();
+            o[u"graphicsApi"] = monitor->property("graphicsApi").toString();
+            return o;
+        });
+        diagnostics.addSection(QStringLiteral("timeline"), [&timeline, &events] {
+            return QJsonObject{{"mode", timeline.mode()},
+                               {"historyMb", timeline.historyMb()},
+                               {"historySeconds", timeline.historySeconds()},
+                               {"recording", timeline.recording()},
+                               {"recordMb", timeline.recordMb()},
+                               {"eventsKept", double(events.rowCount())}};
+        });
+        diagnostics.addSection(QStringLiteral("health"), [&health] {
+            QJsonObject o;
+            int notOk = 0;
+            for (const QVariant &v : health.streams()) {
+                const QVariantMap m = v.toMap();
+                const QString status = m.value(QStringLiteral("status")).toString();
+                o[m.value(QStringLiteral("name")).toString()] = status;
+                notOk += status != u"ok" && status != u"off";
+            }
+            o[u"notOk"] = notOk;
+            return o;
+        });
+        diagnostics.addSection(QStringLiteral("layers"), [&plugins] {
+            QJsonObject o;
+            int on = 0, failing = 0;
+            for (const QVariant &v : plugins.layers()) {
+                const QVariantMap m = v.toMap();
+                if (!m.value(QStringLiteral("enabled")).toBool())
+                    continue;
+                ++on;
+                const QString status = m.value(QStringLiteral("status")).toString();
+                failing += status != u"ok" && status != u"slow" && status != u"starting";
+                o[m.value(QStringLiteral("id")).toString()] = status;
+            }
+            o[u"enabled"] = on;
+            o[u"failing"] = failing;
+            return o;
+        });
+        diagnostics.addSection(QStringLiteral("stages"), [] {
+            return QJsonObject{{"storedValues", double(qp::StageStats::instance().storedValues())}};
+        });
+        diagnostics.addSection(QStringLiteral("network"), [&network] {
+            return QJsonObject{{"role", network.role()},
+                               {"peers", double(network.lines().size())},
+                               {"status", QJsonArray::fromStringList(network.lines())}};
+        });
+        diagnostics.setExtraBundle(QStringLiteral("layout"), [&layout] {
+            return QJsonObject{{"path", layout.path()}, {"status", layout.status()}, {"contents", layout.contents()}};
+        });
+        diagnostics.setExtraBundle(QStringLiteral("layersDetail"), [&plugins] {
+            return QJsonArray::fromVariantList(plugins.layers());
+        });
+        diagnostics.setExtraBundle(QStringLiteral("healthDetail"), [&health] {
+            return QJsonArray::fromVariantList(health.streams());
+        });
+        diagnostics.start();
+        if (const int port = opts->extra(QStringLiteral("metricsPort"), 0).toInt(); port > 0) {
+            QString error;
+            if (!diagnostics.startMetrics(quint16(port), &error)) {
+                QTextStream(stderr) << "--set metricsPort=" << port << ": " << error << "\n";
+                return 4;
+            }
+        }
+    }
     // QML items declared in the window are QObject children of the window, not of its contentItem.
     auto *viewport = window ? window->findChild<QQuickItem *>(QStringLiteral("viewport")) : nullptr;
     const bool wantsRobot = robotMode == QLatin1String("orbit") || robotMode == QLatin1String("click");
@@ -424,7 +594,29 @@ int main(int argc, char *argv[])
                 return centre + QPointF(t.x * pxPerMetre, -t.y * pxPerMetre);
             });
     }
+    std::unique_ptr<QSocketNotifier> signalNotifier;
+    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, g_signalPipe) == 0) {
+        signalNotifier = std::make_unique<QSocketNotifier>(g_signalPipe[1], QSocketNotifier::Read);
+        QObject::connect(signalNotifier.get(), &QSocketNotifier::activated, &app, [&diagnostics] {
+            char c;
+            [[maybe_unused]] const auto n = ::read(g_signalPipe[1], &c, 1);
+            diagnostics.note(QStringLiteral("viewer"), QStringLiteral("asked to stop by a signal"));
+            QCoreApplication::quit();
+        });
+        struct sigaction sa = {};
+        sa.sa_handler = onSignal;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+        sigaction(SIGTERM, &sa, nullptr);
+        sigaction(SIGINT, &sa, nullptr);
+    }
     const int rc = app.exec();
+
+    layout.save();
+    // --set bundleOnExit=<file>: a diagnostic bundle as the viewer stops (soak runs, measurements).
+    if (const QString bundle = opts->extra(QStringLiteral("bundleOnExit")).toString(); !bundle.isEmpty())
+        diagnostics.saveBundle(bundle);
+    diagnostics.note(QStringLiteral("viewer"), QStringLiteral("stopped (exit %1)").arg(rc));
 
     client.reset(); // it feeds the timeline
     timeline.setPublisher(nullptr);

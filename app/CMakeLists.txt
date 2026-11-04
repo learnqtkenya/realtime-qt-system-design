@@ -21,6 +21,8 @@ set(VIEWER_SOURCES
     src/ScriptLayer.h src/ScriptLayer.cpp
     src/ProcessLayer.h src/ProcessLayer.cpp
     src/LayerOverlay.h src/LayerOverlay.cpp
+    src/Diagnostics.h src/Diagnostics.cpp
+    src/LayoutStore.h src/LayoutStore.cpp
     src/Validate.h
     src/Timeline.h src/Timeline.cpp
     src/CameraFeed.h src/CameraFeed.cpp
@@ -44,6 +46,12 @@ set(VIEWER_SOURCES
 )
 
 qt_add_executable(viewer src/main.cpp)
+add_custom_target(viewer_version
+    COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${CMAKE_CURRENT_BINARY_DIR}/generated/qp_version.h
+            -P ${CMAKE_SOURCE_DIR}/cmake/version.cmake
+    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/generated/qp_version.h)
+add_dependencies(viewer viewer_version)
+target_include_directories(viewer PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 set_source_files_properties(qml/ViewSettings.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(viewer
     URI Viewer
@@ -150,3 +158,30 @@ target_compile_definitions(tst_plugins PRIVATE PLUGINS_DIR="${CMAKE_BINARY_DIR}/
 target_link_libraries(tst_plugins PRIVATE qtqmlpro_common Qt6::Test Qt6::Quick Qt6::Network PkgConfig::ZSTD ZLIB::ZLIB)
 add_dependencies(tst_plugins viewer_plugins speed-vectors-layer)
 add_test(NAME plugins COMMAND tst_plugins)
+
+qt_add_executable(tst_ops tests/tst_ops.cpp src/Diagnostics.h src/Diagnostics.cpp src/LayoutStore.h src/LayoutStore.cpp)
+target_include_directories(tst_ops PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(tst_ops PRIVATE qtqmlpro_common Qt6::Test Qt6::Qml Qt6::Network)
+add_test(NAME ops COMMAND tst_ops)
+
+# Step 9: a package. `cmake --install build/release --prefix <dir>` gives a directory that runs
+# without /opt/Qt: bin/viewer, the Qt libraries, plugins and QML modules it uses (Qt's deploy
+# script), and the viewer's own read-only data in share/qtqmlpro.
+include(GNUInstallDirs)
+install(TARGETS viewer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+# Qt's default deploys only the X11 platform plugin; on a Wayland desktop that means XWayland.
+qt_generate_deploy_script(TARGET viewer OUTPUT_SCRIPT viewer_deploy CONTENT "
+qt_deploy_qml_imports(TARGET viewer PLUGINS_FOUND plugins_found)
+qt_deploy_runtime_dependencies(
+    EXECUTABLE \"\${QT_DEPLOY_BIN_DIR}/$<TARGET_FILE_NAME:viewer>\"
+    ADDITIONAL_MODULES \${plugins_found}
+    INCLUDE_PLUGINS qwayland qxcb
+    GENERATE_QT_CONF)
+")
+install(SCRIPT ${viewer_deploy})
+install(DIRECTORY ${CMAKE_BINARY_DIR}/plugins/ DESTINATION ${CMAKE_INSTALL_DATADIR}/qtqmlpro/plugins USE_SOURCE_PERMISSIONS)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/plugins-lab/ DESTINATION ${CMAKE_INSTALL_DATADIR}/qtqmlpro/plugins-lab
+        USE_SOURCE_PERMISSIONS)
+install(FILES ${CMAKE_BINARY_DIR}/media/cam0.mp4 ${CMAKE_BINARY_DIR}/media/cam1.mp4 ${CMAKE_BINARY_DIR}/media/cam2.mp4
+              ${CMAKE_BINARY_DIR}/media/cam3.mp4
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/qtqmlpro/media OPTIONAL)

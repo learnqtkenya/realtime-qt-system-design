@@ -1,0 +1,10 @@
+{
+ "client": {
+  "exit": 0,
+  "stderr": []
+ },
+ "server": {
+  "exit": 0,
+  "stderr": []
+ }
+}

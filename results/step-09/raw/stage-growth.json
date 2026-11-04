@@ -1,0 +1,16 @@
+{
+ "0": {
+  "storedValues_per_s": 981.0611335564896,
+  "storedValues_end": 235920.0,
+  "heap_MB_per_h": -6.819161540447464,
+  "rss_MB_per_h": 138.04608143059951,
+  "seconds": 180.00101518630981
+ },
+ "10000": {
+  "storedValues_per_s": 382.0922287414108,
+  "storedValues_end": 127344.0,
+  "heap_MB_per_h": 49.281954220368476,
+  "rss_MB_per_h": 102.03064833756528,
+  "seconds": 180.0010437965393
+ }
+}
