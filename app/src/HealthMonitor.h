@@ -47,6 +47,8 @@ public:
     void arrived(int stream, quint64 seq, qint64 captureNs);
     void rejected(int stream);
     void noteFault(int stream, const QString &kind);
+    // A new source session (e.g. a reconnect): sequence numbers start again; don't call that loss.
+    void resetSequences();
 
     QVariantList streams() const { return m_snapshot; } // GUI thread
 
@@ -66,6 +68,7 @@ private:
         std::atomic<quint64> lastSeq{0};
         std::atomic<quint64> arrivals{0}, gaps{0}, rejected{0}, reordered{0};
         std::atomic<qint64> latencySumNs{0};
+        std::atomic<bool> newSession{false};
         // health thread only
         struct Tick
         {

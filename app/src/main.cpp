@@ -10,6 +10,7 @@
 #include "LidarPipeline.h"
 #include "Scene.h"
 #include "Selection.h"
+#include "StreamServer.h"
 #include "Timeline.h"
 #include "TrackListModel.h"
 #include "qp/AppOptions.h"
@@ -199,6 +200,50 @@ int main(int argc, char *argv[])
     lab.setHealth(&health);
     health.start();
 
+    // Step 7: --set serve=<port> shares the live streams; --set connect=<host>:<port> (with --no-sim)
+    // shows another viewer's.
+    std::unique_ptr<StreamServer> server;
+    std::unique_ptr<StreamClient> client;
+    const int servePort = opts->extra(QStringLiteral("serve"), 0).toInt();
+    const QString connectTo = opts->extra(QStringLiteral("connect")).toString();
+    NetworkStatus network(servePort > 0 ? QStringLiteral("server") : (connectTo.isEmpty() ? QStringLiteral("off")
+                                                                                          : QStringLiteral("client")));
+    if (servePort > 0) {
+        QJsonObject info;
+        info["app"] = QStringLiteral("viewer");
+        info["workload"] = QJsonObject::fromVariantMap(opts->workloadMap());
+        server = std::make_unique<StreamServer>(
+            quint16(servePort),
+            opts->extra(QStringLiteral("sendPolicy"), QStringLiteral("latest")).toString() == QLatin1String("all")
+                ? StreamServer::Policy::All
+                : StreamServer::Policy::Latest,
+            opts->extra(QStringLiteral("wireZstd"), 1).toInt(), info,
+            qint64(opts->extra(QStringLiteral("highWaterKb"), 1024).toInt()) * 1024,
+            opts->extra(QStringLiteral("sendBufferKb"), 0).toInt() * 1024);
+        QString error;
+        if (!server->start(&error)) {
+            QTextStream(stderr) << "--set serve=" << servePort << ": " << error << "\n";
+            return 4;
+        }
+        timeline.setPublisher(server.get());
+    }
+    if (!connectTo.isEmpty()) {
+        const QStringList hp = connectTo.split(u':');
+        client = std::make_unique<StreamClient>(
+            hp.value(0), quint16(hp.value(1).toInt()), opts->extra(QStringLiteral("readMbps"), 0).toDouble(),
+            opts->extra(QStringLiteral("receiveBufferKb"), 0).toInt() * 1024,
+            StreamClient::Sinks{[&timeline](const qp::SensorFrame &f) { timeline.ingestLidar(f); },
+                                [&timeline](const qp::TrackSetPtr &t) { timeline.ingestTracks(t); },
+                                [&timeline](const qp::EventBatchPtr &b) { timeline.ingestEvents(b); },
+                                [&health] { health.resetSequences(); }});
+        client->start();
+    }
+    QTimer networkTick;
+    QObject::connect(&networkTick, &QTimer::timeout, &network, [&] {
+        network.setLines(server ? server->status() : (client ? QStringList{client->status()} : QStringList{}));
+    });
+    networkTick.start(1000);
+
     std::unique_ptr<qp::SensorSimulator> sim;
     if (!opts->noSim()) {
         sim = std::make_unique<qp::SensorSimulator>(lab.workload());
@@ -262,6 +307,7 @@ int main(int argc, char *argv[])
     QJSEngine::setObjectOwnership(&cameras, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&timeline, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&health, QJSEngine::CppOwnership);
+    QJSEngine::setObjectOwnership(&network, QJSEngine::CppOwnership);
 
     QQmlApplicationEngine engine;
     QObject::connect(
@@ -273,6 +319,7 @@ int main(int argc, char *argv[])
     engine.setExternalSingletonInstance("Viewer", "Cameras", &cameras);
     engine.setExternalSingletonInstance("Viewer", "Timeline", &timeline);
     engine.setExternalSingletonInstance("Viewer", "Health", &health);
+    engine.setExternalSingletonInstance("Viewer", "Network", &network);
     engine.loadFromModule("Viewer", "Main");
     // Started after the window exists, so the panels have their sinks.
     cameras.setEnabled(opts->extra(QStringLiteral("cameras"), true).toBool());
@@ -341,6 +388,9 @@ int main(int argc, char *argv[])
     }
     const int rc = app.exec();
 
+    client.reset(); // it feeds the timeline
+    timeline.setPublisher(nullptr);
+    server.reset();
     cameras.setMarkSink({}); // the timeline goes before the cameras
     pipeline.shutdown();
     if (sim)

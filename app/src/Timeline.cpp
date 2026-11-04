@@ -2,6 +2,7 @@
 
 #include "FileSource.h"
 #include "HealthMonitor.h"
+#include "StreamServer.h"
 #include "Validate.h"
 #include "qp/StageStats.h"
 
@@ -57,6 +58,8 @@ void Timeline::ingestLidar(const qp::SensorFrame &frame)
     }
     if (const auto w = writer())
         w->addLidar(frame);
+    if (m_publisher)
+        m_publisher->publishLidar(frame);
     m_presenter.ingest([&] { m_history->addLidar(frame); }, [&] {
         // Arrival order isn't capture order (a jittery link): "latest arrived" can be older than
         // what is on screen.
@@ -87,6 +90,8 @@ void Timeline::ingestTracks(const qp::TrackSetPtr &in)
     }
     if (const auto w = writer())
         w->addTracks(set);
+    if (m_publisher)
+        m_publisher->publishTracks(set);
     m_presenter.ingest([&] { m_history->addTracks(set); }, [&] { m_sinks.tracks(set); });
 }
 
@@ -96,6 +101,8 @@ void Timeline::ingestEvents(const qp::EventBatchPtr &batch)
         m_health->arrived(qp::kEventsStream, ++m_eventBatches, batch->front().captureNs);
     if (const auto w = writer())
         w->addEvents(batch);
+    if (m_publisher)
+        m_publisher->publishEvents(batch);
     m_presenter.ingest([&] { m_history->addEvents(batch); }, [&] { m_sinks.events(batch, false); });
 }
 

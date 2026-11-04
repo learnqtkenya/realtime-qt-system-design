@@ -258,6 +258,17 @@ Rectangle {
             }
 
             SectionTitle {
+                visible: Network.role !== "off"
+                text: Network.role === "server" ? "Viewers connected" : "Connected to"
+            }
+            Caption {
+                visible: Network.role !== "off"
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: Network.lines.length > 0 ? Network.lines.join("\n") : (Network.role === "server" ? "none yet" : "")
+            }
+
+            SectionTitle {
                 text: "Sensor health"
             }
             Repeater {
@@ -309,9 +320,11 @@ Rectangle {
             }
 
             SectionTitle {
+                visible: Network.role !== "client"
                 text: "Faults"
             }
             RowLayout {
+                visible: Network.role !== "client"
                 Layout.fillWidth: true
 
                 ComboBox {
@@ -328,6 +341,7 @@ Rectangle {
                 }
             }
             Flow {
+                visible: Network.role !== "client"
                 Layout.fillWidth: true
                 spacing: 4
 

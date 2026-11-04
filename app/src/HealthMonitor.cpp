@@ -91,6 +91,8 @@ void HealthMonitor::arrived(int stream, quint64 seq, qint64 captureNs)
 {
     Stream &s = m_streams[size_t(stream)];
     const qint64 now = qp::nowNs();
+    if (s.newSession.exchange(false, std::memory_order_relaxed))
+        s.lastSeq.store(seq, std::memory_order_relaxed);
     const quint64 last = s.lastSeq.load(std::memory_order_relaxed);
     if (s.arrivals.load(std::memory_order_relaxed) > 0 && seq > last + 1)
         s.gaps.fetch_add(seq - last - 1, std::memory_order_relaxed);
@@ -104,6 +106,12 @@ void HealthMonitor::arrived(int stream, quint64 seq, qint64 captureNs)
     s.latencySumNs.fetch_add(now - captureNs, std::memory_order_relaxed);
     s.arrivals.fetch_add(1, std::memory_order_relaxed);
     s.lastArrivalNs.store(now, std::memory_order_release);
+}
+
+void HealthMonitor::resetSequences()
+{
+    for (Stream &s : m_streams)
+        s.newSession.store(true, std::memory_order_relaxed);
 }
 
 void HealthMonitor::rejected(int stream)

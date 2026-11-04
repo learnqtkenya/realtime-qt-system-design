@@ -1,0 +1,18 @@
+05:02:01 [encode-zstd0-r1]
+05:02:24 [encode-zstd1-r1]
+05:02:47 [encode-zstd0-r2]
+05:03:11 [encode-zstd1-r2]
+05:03:34 [clients1-r1]
+05:03:57 [clients2-r1]
+05:04:20 [clients4-r1]
+05:04:44 [clients1-r2]
+05:05:07 [clients2-r2]
+05:05:30 [clients4-r2]
+05:05:54 [slow-all-r1]
+05:06:27 [slow-latest-r1]
+05:07:00 [slow-all-r2]
+05:07:34 [slow-latest-r2]
+05:08:07 [restart-r1]
+  [restart-r1-server2] 3 stderr line(s): --set serve=7400: The bound address is already in use
+05:08:31 [restart-r2]
+  [restart-r2-server2] 3 stderr line(s): --set serve=7400: The bound address is already in use

@@ -1,6 +1,7 @@
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET libzstd)
 find_package(ZLIB REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Network)
 
 set(VIEWER_SOURCES
     src/Codec.h src/Codec.cpp
@@ -13,6 +14,8 @@ set(VIEWER_SOURCES
     src/TrackInstancing.h src/TrackInstancing.cpp
     src/TrackOverlay.h src/TrackOverlay.cpp
     src/HealthMonitor.h src/HealthMonitor.cpp
+    src/StreamServer.h src/StreamServer.cpp
+    src/Wire.h src/Wire.cpp
     src/Validate.h
     src/Timeline.h src/Timeline.cpp
     src/CameraFeed.h src/CameraFeed.cpp
@@ -70,7 +73,7 @@ target_include_directories(viewer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # QRhi has limited compatibility guarantees across Qt versions.
 target_link_libraries(viewer PRIVATE
     qtqmlpro_common qtqmlpro_commonplugin
-    Qt6::Quick3D Qt6::QuickControls2 Qt6::Multimedia Qt6::GuiPrivate PkgConfig::ZSTD ZLIB::ZLIB)
+    Qt6::Quick3D Qt6::QuickControls2 Qt6::Multimedia Qt6::GuiPrivate Qt6::Network PkgConfig::ZSTD ZLIB::ZLIB)
 
 qt_add_executable(tst_viewer tests/tst_viewer.cpp
     src/Lab.h src/Lab.cpp
@@ -111,3 +114,10 @@ qt_add_executable(tst_models tests/tst_models.cpp
 target_include_directories(tst_models PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(tst_models PRIVATE qtqmlpro_common Qt6::Test Qt6::Qml)
 add_test(NAME models COMMAND tst_models)
+
+qt_add_executable(tst_wire tests/tst_wire.cpp
+    src/StreamServer.h src/StreamServer.cpp src/Wire.h src/Wire.cpp
+    src/Codec.h src/Codec.cpp src/Recording.h src/Recording.cpp)
+target_include_directories(tst_wire PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(tst_wire PRIVATE qtqmlpro_common Qt6::Test Qt6::Network Qt6::Qml PkgConfig::ZSTD ZLIB::ZLIB)
+add_test(NAME wire COMMAND tst_wire)

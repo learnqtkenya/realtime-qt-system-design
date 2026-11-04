@@ -1,0 +1,10 @@
+05:10:33 [buffers-small-r1]
+05:10:56 [buffers-small-r2]
+Traceback (most recent call last):
+  File "/home/user/Documents/Qt/QtQMLPro/scripts/twoproc.py", line 108, in <module>
+    main()
+    ~~~~^^
+  File "/home/user/Documents/Qt/QtQMLPro/scripts/twoproc.py", line 96, in main
+    for label, server_args, clients in all_series[name]:
+                                       ~~~~~~~~~~^^^^^^
+KeyError: 'restart'

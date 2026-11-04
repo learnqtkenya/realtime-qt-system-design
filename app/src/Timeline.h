@@ -19,6 +19,7 @@
 
 class FileSource;
 class HealthMonitor;
+class StreamServer;
 
 // The timeline bar's model: live, pause, play, scrub, record, open a recording.
 class Timeline : public QObject
@@ -76,6 +77,8 @@ public:
         m_validate = validate;
         m_keepOrder = keepOrder;
     }
+    // Validated samples (and health events) also go to other viewers.
+    void setPublisher(StreamServer *server) { m_publisher = server; }
     // Written into every new recording's header.
     void setRecordingInfo(const QJsonObject &info) { m_info = info; }
 
@@ -130,6 +133,7 @@ private:
     std::shared_ptr<rec::Writer> writer() const;
 
     HealthMonitor *m_health = nullptr;
+    StreamServer *m_publisher = nullptr;
     bool m_validate = true;
     bool m_keepOrder = true;
     std::array<qint64, 16> m_newestShownLidar{}; // pass-through only; under the presenter's ingest lock
