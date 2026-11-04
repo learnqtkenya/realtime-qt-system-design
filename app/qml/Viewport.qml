@@ -162,6 +162,27 @@ Item {
         }
     }
 
+    // Step 8: plugin layers, under the boxes. Item plugins are parented to the container; script and
+    // process plugins only produce drawing data, which LayerOverlay draws.
+    Item {
+        id: pluginItems
+
+        anchors.fill: parent
+        visible: viewport.topDown
+
+        Component.onCompleted: {
+            Plugins.pxPerMetre = ViewSettings.pxPerMetre;
+            Plugins.itemContainer = pluginItems;
+        }
+    }
+
+    LayerOverlay {
+        anchors.fill: parent
+        visible: viewport.topDown
+        host: Plugins
+        pxPerMetre: ViewSettings.pxPerMetre
+    }
+
     // --set overlay=items|node: a QML item per object, or one scene graph subtree for all (step 5).
     TrackOverlay {
         anchors.fill: parent

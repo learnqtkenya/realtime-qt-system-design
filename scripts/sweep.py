@@ -269,6 +269,43 @@ def _step06_series():
     return s
 
 
+def _step08_series():
+    raw = bench.ROOT / "results/step-08/raw"
+
+    def setting(**kv):
+        return [a for k, v in kv.items() for a in ("--set", f"{k}={v}")]
+
+    def base(objects):
+        return ["--points", 150_000, "--rate", 10, "--objects", objects, "--events", 200, "--variant", "rhi",
+                *setting(cameras=0, labPlugins=1)]
+
+    def run(label, objects, duration, **kv):
+        return (label, [*base(objects), *setting(layerLog=raw / f"{label}.layers.jsonl", **kv)], duration)
+
+    kinds = [("none", {}), ("item", {"layers": "speed-vectors-item"}),
+             ("js-gui", {"layers": "speed-vectors", "scriptThread": "gui"}),
+             ("qml-gui", {"layers": "speed-vectors-qml", "scriptThread": "gui"}),
+             ("js-worker", {"layers": "speed-vectors"}), ("qml-worker", {"layers": "speed-vectors-qml"}),
+             ("py", {"layers": "speed-vectors-py"}), ("py-sandbox", {"layers": "speed-vectors-py", "sandbox": 1}),
+             ("cpp", {"layers": "speed-vectors-cpp"})]
+    s = {"cost": [run(f"cost-{k}-{o}-r{n}", o, 20, **kv) for n in (1, 2) for o in (200, 2000) for k, kv in kinds]}
+    bad = [("spin-item", {"layers": "spin-item"}),
+           ("spin-js-gui", {"layers": "spin-script", "scriptThread": "gui"}),
+           ("spin-js-worker", {"layers": "spin-script"}),
+           ("slow-js-gui", {"layers": "slow-script", "scriptThread": "gui"}),
+           ("slow-js-worker", {"layers": "slow-script"}),
+           ("crash", {"layers": "crash-process"}), ("hang", {"layers": "hang-process"}),
+           ("garbage", {"layers": "garbage-process"}),
+           ("flood-every", {"layers": "flood-process", "layerPost": "every", "answerSlack": 0}),
+           ("flood-latest", {"layers": "flood-process", "answerSlack": 0}),
+           ("flood-contract", {"layers": "flood-process"})]
+    s["misbehave"] = [run(f"bad-{k}-r{n}", 200, 15, **kv) for n in (1, 2) for k, kv in bad]
+    return s
+
+
+MODULES["step-08"] = ("app/viewer", ["layers_sync_ms", "overlay_sync_ms", "tracks_rebuild_ms", "event_reset_ms"])
+MODULE_ENV["step-08"] = {"QSG_RHI_PROFILE": "1"}
+RATES["step-08"] = []
 MODULES["step-06"] = ("app/viewer", ["validate_ms", "tracks_rebuild_ms", "event_reset_ms"])
 MODULE_ENV["step-06"] = {"QSG_RHI_PROFILE": "1"}
 RATES["step-06"] = []
@@ -281,7 +318,7 @@ MODULES["step-04"] = ("app/viewer", ["history_add_ms", "seek_ms", "present_late_
 MODULE_ENV["step-04"] = {"QSG_RHI_PROFILE": "1"}
 RATES["step-04"] = ["camera_decoded", "camera_presented"]
 MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series(), "step-02": _step02_series(),
-                 "step-03": _step03_series(), "step-04": _step04_series(), "step-05": _step05_series(), "step-06": _step06_series()}
+                 "step-03": _step03_series(), "step-04": _step04_series(), "step-05": _step05_series(), "step-06": _step06_series(), "step-08": _step08_series()}
 
 EXTRA_SERIES = {
     "m03": {

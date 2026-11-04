@@ -162,7 +162,9 @@ void Presenter::deliver(const Sample &s, qint64 T, qint64 stampNs, qint64 now, b
         if (m_sinks.camera)
             m_sinks.camera(s.mark, T, m_rate, m_mode == Mode::Playing, now);
         break;
-    case rec::Type::Gap: break;
+    case rec::Type::Gap:
+    case rec::Type::Overlay:
+    case rec::Type::Selection: break;
     }
 }
 

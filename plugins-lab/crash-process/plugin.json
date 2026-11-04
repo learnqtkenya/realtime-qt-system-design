@@ -1,0 +1,8 @@
+{
+    "id": "crash-process",
+    "name": "Lab: crash (process)",
+    "kind": "process",
+    "api": "1.0",
+    "exec": ["python3", "-I", "../misbehave.py", "crash", "60"],
+    "properties": {"port": 8765}
+}

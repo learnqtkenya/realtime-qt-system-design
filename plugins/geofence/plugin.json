@@ -1,0 +1,9 @@
+{
+    "id": "geofence",
+    "name": "Geofence",
+    "description": "A zone, and the objects inside it",
+    "kind": "process",
+    "api": "1.0",
+    "exec": ["python3", "-I", "layer.py"],
+    "properties": {"zone": [[12, -8], [38, -14], [44, 6], [18, 14]], "label": "Zone A"}
+}

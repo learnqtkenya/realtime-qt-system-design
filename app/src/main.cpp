@@ -5,9 +5,11 @@
 #include "HealthMonitor.h"
 #include "InputRobot.h"
 #include "Lab.h"
+#include "LayerOverlay.h"
 #include "LidarHub.h"
 #include "LidarMailbox.h"
 #include "LidarPipeline.h"
+#include "Plugins.h"
 #include "Scene.h"
 #include "Selection.h"
 #include "StreamServer.h"
@@ -300,6 +302,39 @@ int main(int argc, char *argv[])
     if (const QStringList to = opts->extra(QStringLiteral("switchTo")).toString().split(u'@'); to.size() == 2)
         QTimer::singleShot(int(to[1].toDouble() * 1000), &lab, [&lab, id = to[0]] { lab.setRenderer(id); });
 
+    // Step 8: overlay layers from plugins. --set pluginDir=<dir>[,<dir>...] --set layers=<id>,<id>
+    // --set scriptThread=worker|gui --set sandbox=1
+    PluginHost::Options pluginOptions;
+    {
+        const QString appDir = QCoreApplication::applicationDirPath();
+        pluginOptions.dirs = opts->extra(QStringLiteral("pluginDir"), appDir + QStringLiteral("/../plugins"))
+                                 .toString()
+                                 .split(u',', Qt::SkipEmptyParts);
+        if (opts->extra(QStringLiteral("labPlugins"), false).toBool())
+            pluginOptions.dirs << appDir + QStringLiteral("/../plugins-lab");
+        pluginOptions.enabled = opts->extra(QStringLiteral("layers")).toString().split(u',', Qt::SkipEmptyParts);
+        pluginOptions.scriptOnGui = opts->extra(QStringLiteral("scriptThread"), QStringLiteral("worker")).toString()
+                                    == QLatin1String("gui");
+        pluginOptions.budgetMs = opts->extra(QStringLiteral("layerBudgetMs"), 4).toDouble();
+        pluginOptions.hardMs = opts->extra(QStringLiteral("layerHardMs"), 100).toDouble();
+        pluginOptions.silenceMs = opts->extra(QStringLiteral("layerSilenceMs"), 2000).toInt();
+        pluginOptions.sandbox = opts->extra(QStringLiteral("sandbox"), false).toBool();
+        pluginOptions.logPath = opts->extra(QStringLiteral("layerLog")).toString();
+        pluginOptions.answerSlack = opts->extra(QStringLiteral("answerSlack"), 50).toInt();
+        pluginOptions.postEvery = opts->extra(QStringLiteral("layerPost"), QStringLiteral("latest")).toString() == QLatin1String("every");
+    }
+    std::atomic<quint64> pluginSeq{0};
+    PluginHost plugins(&store, &selection, &tracks, pluginOptions,
+                       [&timeline, &pluginSeq](const QString &source, const QString &text, int severity) {
+                           qp::EventRecord e;
+                           e.seq = ++pluginSeq;
+                           e.captureNs = qp::nowNs();
+                           e.severity = quint8(severity);
+                           e.source = source;
+                           e.text = text;
+                           timeline.ingestEvents(std::make_shared<qp::EventBatch>(qp::EventBatch{e}));
+                       });
+
     Scene scene({&store, &pipeline, &mailbox, &canvasFeed, &tracks, &events, &objectTable, eventLog});
     QJSEngine::setObjectOwnership(&scene, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&lab, QJSEngine::CppOwnership);
@@ -308,6 +343,7 @@ int main(int argc, char *argv[])
     QJSEngine::setObjectOwnership(&timeline, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&health, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&network, QJSEngine::CppOwnership);
+    QJSEngine::setObjectOwnership(&plugins, QJSEngine::CppOwnership);
 
     QQmlApplicationEngine engine;
     QObject::connect(
@@ -320,7 +356,9 @@ int main(int argc, char *argv[])
     engine.setExternalSingletonInstance("Viewer", "Timeline", &timeline);
     engine.setExternalSingletonInstance("Viewer", "Health", &health);
     engine.setExternalSingletonInstance("Viewer", "Network", &network);
+    engine.setExternalSingletonInstance("Viewer", "Plugins", &plugins);
     engine.loadFromModule("Viewer", "Main");
+    plugins.start();
     // Started after the window exists, so the panels have their sinks.
     cameras.setEnabled(opts->extra(QStringLiteral("cameras"), true).toBool());
 

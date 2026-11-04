@@ -1,0 +1,338 @@
+{
+  "budgetMs": 16.666666666666668,
+  "cameraAbsSkewMs": {
+    "max": 0,
+    "mean": 0,
+    "min": 0,
+    "n": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0
+  },
+  "cameraLatencyMs": {
+    "max": 0,
+    "mean": 0,
+    "min": 0,
+    "n": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0
+  },
+  "cameraSkewMs": {
+    "max": 0,
+    "mean": 0,
+    "min": 0,
+    "n": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0
+  },
+  "devicePixelRatio": 1,
+  "eventLoopLagMs": {
+    "max": 4.492213,
+    "mean": 0.2023927421926907,
+    "min": 0,
+    "n": 1505,
+    "p50": 0.07381500000000019,
+    "p95": 0.6936152,
+    "p99": 2.9884496000000063
+  },
+  "extras": {
+    "app": "viewer",
+    "eventsPerSecond": 200,
+    "lidarRateHz": 10,
+    "noSim": false,
+    "objects": 200,
+    "pointsPerFrame": 150000,
+    "pointsPerSecond": 6000000,
+    "policy": "drop-oldest",
+    "queueDepth": 1,
+    "renderer": "rhi",
+    "requestedGraphicsApi": "default",
+    "seed": 1,
+    "sensors": 4,
+    "set": {
+      "cameras": "0",
+      "labPlugins": "1",
+      "layerLog": "/home/user/Documents/Qt/QtQMLPro/results/step-08/raw/bad-spin-item-r2.layers.jsonl",
+      "layers": "spin-item"
+    },
+    "still": false,
+    "trackRateHz": 10,
+    "variant": "rhi",
+    "workers": 4
+  },
+  "fps": 12.5999043902455,
+  "fpsSeries": [
+    60.027288525418236,
+    60.020403455991634,
+    59.941603391435976
+  ],
+  "frameMs": {
+    "max": 17.777587,
+    "mean": 16.677100947089944,
+    "min": 15.51996,
+    "n": 189,
+    "p50": 16.681446,
+    "p95": 17.1953106,
+    "p99": 17.4248666
+  },
+  "frameP99Series": [
+    17.402291339999998,
+    17.451538839999998,
+    17.34051686
+  ],
+  "frames": 189,
+  "framesOver": {
+    "gt100ms": 0,
+    "gt20ms": 0,
+    "gt33ms": 0
+  },
+  "gpuMs": {
+    "max": 2.45267,
+    "mean": 1.5832235904255327,
+    "min": 1.518926,
+    "n": 188,
+    "p50": 1.54203,
+    "p95": 2.1573422,
+    "p99": 2.29568229
+  },
+  "graphicsApi": "opengl",
+  "guiCpuPercent": {
+    "max": 99.99416264168141,
+    "mean": 79.93471240662107,
+    "min": 6.242120929043593,
+    "n": 15,
+    "p50": 99.98389766555873,
+    "p95": 99.99199265211685,
+    "p99": 99.9937286437685
+  },
+  "inputDispatchMs": {
+    "max": 0,
+    "mean": 0,
+    "min": 0,
+    "n": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0
+  },
+  "inputLatencyMs": {
+    "max": 0,
+    "mean": 0,
+    "min": 0,
+    "n": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0
+  },
+  "kernel": "7.0.0-38-generic",
+  "label": "bad-spin-item-r2",
+  "lagP99Series": [
+    2.808815950000004,
+    3.24015763,
+    2.6394168000000002
+  ],
+  "latencyMs": {
+    "max": 33.898483,
+    "mean": 27.03226246031746,
+    "min": 16.103764,
+    "n": 126,
+    "p50": 25.0699395,
+    "p95": 32.72222,
+    "p99": 33.46423175
+  },
+  "measuredSeconds": 15.000113822,
+  "msSinceLastFrame": 11858.717754,
+  "msSinceLastGuiTick": 11868.11125,
+  "presentationPauseMs": 11858.717754,
+  "processCpuPercent": {
+    "max": 112.65569498442983,
+    "mean": 92.13220349905744,
+    "min": 28.472619817276744,
+    "n": 15,
+    "p50": 106.31767716578429,
+    "p95": 112.60949249243906,
+    "p99": 112.64645448603167
+  },
+  "qtVersion": "6.12.0",
+  "refreshHz": 59.95100021362305,
+  "renderMs": {
+    "max": 2.541257,
+    "mean": 0.9371844042553188,
+    "min": 0.165957,
+    "n": 188,
+    "p50": 1.0027525000000002,
+    "p95": 1.66967095,
+    "p99": 1.8620177999999994
+  },
+  "rhi": {
+    "backend": "OpenGL",
+    "device": "AMD AMD Radeon 780M Graphics (radeonsi, phoenix, ACO, DRM 3.64, 7.0.0-38-generic) 4.6 (Compatibility Profile) Mesa 26.0.8-1ubuntu0.3",
+    "timestamps": true,
+    "vertexShaderPointSize": true
+  },
+  "rssGrowthMb": 688.55859375,
+  "rssGrowthMbPerMinute": 3243.828683035714,
+  "rssMb": {
+    "max": 1172.98046875,
+    "mean": 920.5216145833333,
+    "min": 484.421875,
+    "n": 15,
+    "p50": 966.5703125,
+    "p95": 1172.98046875,
+    "p99": 1172.98046875
+  },
+  "rssSeriesMb": [
+    484.421875,
+    553.390625,
+    622.47265625,
+    691.3515625,
+    760.15625,
+    828.95703125,
+    897.76953125,
+    966.5703125,
+    1035.37109375,
+    1104.1796875,
+    1171.26171875,
+    1172.98046875,
+    1172.98046875,
+    1172.98046875,
+    1172.98046875
+  ],
+  "stages": {
+    "event_reset_ms": {
+      "firstQuarterMean": 0.13452193333333332,
+      "lastQuarterMean": 0.14465719999999999,
+      "max": 0.298389,
+      "mean": 0.13618125806451617,
+      "min": 0.062409,
+      "n": 62,
+      "p50": 0.12053549999999999,
+      "p95": 0.2408534,
+      "p99": 0.27018992000000003
+    },
+    "history_add_ms": {
+      "firstQuarterMean": 0.001469293333333333,
+      "lastQuarterMean": 0.003761046666666668,
+      "max": 0.044474,
+      "mean": 0.002259168333333333,
+      "min": 0.00034,
+      "n": 600,
+      "p50": 0.001182,
+      "p95": 0.006885549999999998,
+      "p99": 0.014478099999999999
+    },
+    "log_row_reused": {
+      "firstQuarterMean": 1,
+      "lastQuarterMean": 1,
+      "max": 1,
+      "mean": 1,
+      "min": 1,
+      "n": 620,
+      "p50": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "overlay_sync_ms": {
+      "firstQuarterMean": 2.409100714285714,
+      "lastQuarterMean": 2.351685428571429,
+      "max": 3.087098,
+      "mean": 2.431732612903226,
+      "min": 1.97173,
+      "n": 31,
+      "p50": 2.379428,
+      "p95": 2.837993,
+      "p99": 3.0245486
+    },
+    "rhi_prepare_ms": {
+      "firstQuarterMean": 0.08227444680851063,
+      "lastQuarterMean": 0.07617429787234044,
+      "max": 0.268101,
+      "mean": 0.08099507446808514,
+      "min": 0.002204,
+      "n": 188,
+      "p50": 0.0817455,
+      "p95": 0.19045555000000006,
+      "p99": 0.22152568999999986
+    },
+    "submitted": {
+      "firstQuarterMean": 1,
+      "lastQuarterMean": 1,
+      "max": 1,
+      "mean": 1,
+      "min": 1,
+      "n": 600,
+      "p50": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "tracks_rebuild_ms": {
+      "firstQuarterMean": 1.0041722857142859,
+      "lastQuarterMean": 0.8873810000000001,
+      "max": 1.344404,
+      "mean": 0.9426265161290324,
+      "min": 0.662383,
+      "n": 31,
+      "p50": 0.99068,
+      "p95": 1.222562,
+      "p99": 1.3265021
+    },
+    "unexpected_GUI_thread_late": {
+      "max": 1,
+      "mean": 1,
+      "min": 1,
+      "n": 1,
+      "p50": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "unexpected_GUI_thread_stale": {
+      "max": 1,
+      "mean": 1,
+      "min": 1,
+      "n": 1,
+      "p50": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "uploaded": {
+      "firstQuarterMean": 1,
+      "lastQuarterMean": 1,
+      "max": 1,
+      "mean": 1,
+      "min": 1,
+      "n": 125,
+      "p50": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "validate_ms": {
+      "firstQuarterMean": 0.28262875333333337,
+      "lastQuarterMean": 0.7534546999999997,
+      "max": 3.352113,
+      "mean": 0.5303728966666664,
+      "min": 0.168021,
+      "n": 600,
+      "p50": 0.5186394999999999,
+      "p95": 1.046578549999999,
+      "p99": 1.54617213
+    }
+  },
+  "stalled": true,
+  "suspectExternalPause": true,
+  "syncMs": {
+    "max": 3.540893,
+    "mean": 0.5690421702127657,
+    "min": 0.00483,
+    "n": 188,
+    "p50": 0.094771,
+    "p95": 3.0495447,
+    "p99": 3.28580256
+  },
+  "timestamp": "2026-11-04T07:20:34Z",
+  "exitStatus": 4,
+  "stderrLines": [
+    "qp.framemonitor: GUI thread did not exit after the benchmark; forcing exit"
+  ],
+  "attempts": 3
+}

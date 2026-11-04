@@ -50,7 +50,9 @@ bool isKnown(Type type, quint16 version)
     case Type::Tracks:
     case Type::Events:
     case Type::CameraMark:
-    case Type::Gap: return version >= 1; // newer versions only append fields
+    case Type::Gap:
+    case Type::Overlay:
+    case Type::Selection: return version >= 1; // newer versions only append fields
     }
     return false;
 }
@@ -214,6 +216,8 @@ void Writer::append(Open &o, const Item &item)
         case Type::Events: o.raw.append(encodeEvents(*std::get<qp::EventBatchPtr>(item.payload))); break;
         case Type::CameraMark: o.raw.append(encodeCameraMark(std::get<CameraMark>(item.payload))); break;
         case Type::Gap: o.raw.append(encodeGap(std::get<Gap>(item.payload))); break;
+        case Type::Overlay:
+        case Type::Selection: break; // never recorded
         }
     }
     const auto size = quint32(o.raw.size() - at - 20);

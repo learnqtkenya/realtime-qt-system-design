@@ -1,0 +1,7 @@
+{
+    "id": "curious-js",
+    "name": "Lab: what can a JS module reach?",
+    "kind": "script",
+    "api": "1.0",
+    "entry": "layer.mjs"
+}

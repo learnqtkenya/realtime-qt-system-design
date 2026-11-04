@@ -1,0 +1,13 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.114961941}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.114998762}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.115123419}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.115138197}
+{"detail":"","layer":"hang-process","status":"starting","t":0.115265891}
+{"detail":"pid 3864963 · misbehave hang","layer":"hang-process","status":"ok","t":0.159505367}
+{"detail":"no answer for 2 s; restarting in 250 ms","layer":"hang-process","status":"not responding","t":8.203824362}
+{"layer":"hang-process","message":"not responding: no answer for 2 s; restarting in 250 ms","t":8.203886641}
+{"detail":"pid 3865392 · misbehave hang","layer":"hang-process","status":"ok","t":8.472925366}
+{"detail":"no answer for 2 s; restarting in 500 ms","layer":"hang-process","status":"not responding","t":16.403459633}
+{"layer":"hang-process","message":"not responding: no answer for 2 s; restarting in 500 ms","t":16.403551078}
+{"detail":"pid 3865868 · misbehave hang","layer":"hang-process","status":"ok","t":16.922889066}
+{"detail":"","layer":"hang-process","status":"off","t":18.145763849}

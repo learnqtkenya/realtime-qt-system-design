@@ -1,0 +1,7 @@
+{
+    "id": "spin-item",
+    "name": "Lab: endless loop (item)",
+    "kind": "item",
+    "api": "1.0",
+    "entry": "Layer.qml"
+}

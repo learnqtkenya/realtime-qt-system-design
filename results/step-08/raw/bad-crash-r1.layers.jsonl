@@ -1,0 +1,13 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.113645892}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.113681951}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.11380753}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.113813331}
+{"detail":"","layer":"crash-process","status":"starting","t":0.113926667}
+{"detail":"pid 3863890 · misbehave crash","layer":"crash-process","status":"ok","t":0.158632934}
+{"detail":"crashed; restarting in 250 ms","layer":"crash-process","status":"crashed","t":6.331907666}
+{"layer":"crash-process","message":"crashed: crashed; restarting in 250 ms","t":6.331967831}
+{"detail":"pid 3864269 · misbehave crash","layer":"crash-process","status":"ok","t":6.602252342}
+{"detail":"crashed; restarting in 500 ms","layer":"crash-process","status":"crashed","t":12.732579388}
+{"layer":"crash-process","message":"crashed: crashed; restarting in 500 ms","t":12.732623933}
+{"detail":"pid 3864674 · misbehave crash","layer":"crash-process","status":"ok","t":13.250898975}
+{"detail":"","layer":"crash-process","status":"off","t":18.143880076}

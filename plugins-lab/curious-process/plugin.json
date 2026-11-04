@@ -1,0 +1,8 @@
+{
+    "id": "curious-process",
+    "name": "Lab: curious (process)",
+    "kind": "process",
+    "api": "1.0",
+    "exec": ["python3", "-I", "../misbehave.py", "curious", "30"],
+    "properties": {"port": 8765}
+}

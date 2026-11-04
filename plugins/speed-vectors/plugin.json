@@ -1,0 +1,8 @@
+{
+    "id": "speed-vectors",
+    "name": "Speed vectors",
+    "description": "Where each object will be in 2 s",
+    "kind": "script",
+    "api": "1.0",
+    "entry": "layer.mjs"
+}

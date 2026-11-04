@@ -1,0 +1,5 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.13731855}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.137353406}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.137494796}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.137501048}
+{"detail":"in the viewer's engine","layer":"spin-item","status":"ok","t":0.138027953}

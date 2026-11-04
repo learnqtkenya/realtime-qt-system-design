@@ -1,0 +1,7 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.151119233}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.15115969}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.151327891}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.151336968}
+{"detail":"","layer":"flood-process","status":"starting","t":0.151479851}
+{"detail":"pid 3868019 · misbehave flood","layer":"flood-process","status":"ok","t":0.214053795}
+{"detail":"","layer":"flood-process","status":"off","t":18.192811053}

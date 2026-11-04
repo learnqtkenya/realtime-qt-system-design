@@ -1,0 +1,7 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.118818325}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.118855306}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.118982128}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.118987919}
+{"detail":"","layer":"speed-vectors-qml","status":"starting","t":0.119102507}
+{"detail":"own QML engine, own thread","layer":"speed-vectors-qml","status":"ok","t":0.124919011}
+{"detail":"","layer":"speed-vectors-qml","status":"off","t":23.185408109}

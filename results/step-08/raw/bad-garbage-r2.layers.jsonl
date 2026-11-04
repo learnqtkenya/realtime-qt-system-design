@@ -1,0 +1,13 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.115766947}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.115801694}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.115926241}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.115932012}
+{"detail":"","layer":"garbage-process","status":"starting","t":0.116055428}
+{"detail":"pid 3880385 · misbehave garbage","layer":"garbage-process","status":"ok","t":0.160374415}
+{"detail":"protocol error: not an overlay stream; restarting in 250 ms","layer":"garbage-process","status":"error","t":6.164380416}
+{"layer":"garbage-process","message":"error: protocol error: not an overlay stream; restarting in 250 ms","t":6.164428558}
+{"detail":"pid 3880759 · misbehave garbage","layer":"garbage-process","status":"ok","t":6.432632291}
+{"detail":"protocol error: not an overlay stream; restarting in 500 ms","layer":"garbage-process","status":"error","t":12.464334922}
+{"layer":"garbage-process","message":"error: protocol error: not an overlay stream; restarting in 500 ms","t":12.464376892}
+{"detail":"pid 3881126 · misbehave garbage","layer":"garbage-process","status":"ok","t":12.982868227}
+{"detail":"","layer":"garbage-process","status":"off","t":18.145077967}

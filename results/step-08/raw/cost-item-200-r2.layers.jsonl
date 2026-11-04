@@ -1,0 +1,6 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.111190397}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.111227097}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.111357716}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.111363797}
+{"detail":"in the viewer's engine","layer":"speed-vectors-item","status":"ok","t":0.112194391}
+{"detail":"","layer":"speed-vectors-item","status":"off","t":23.147844063}

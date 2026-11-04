@@ -1,0 +1,21 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.13954619}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.139585996}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.139730431}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.139737074}
+{"detail":"","layer":"flood-process","status":"starting","t":0.139869126}
+{"detail":"pid 3883494 · misbehave flood","layer":"flood-process","status":"ok","t":0.192141263}
+{"detail":"flooding: 51 answers for 0 inputs; restarting in 250 ms","layer":"flood-process","status":"error","t":0.192203762}
+{"layer":"flood-process","message":"error: flooding: 51 answers for 0 inputs; restarting in 250 ms","t":0.192215324}
+{"detail":"pid 3883522 · misbehave flood","layer":"flood-process","status":"ok","t":0.441009037}
+{"detail":"flooding: 51 answers for 0 inputs; restarting in 500 ms","layer":"flood-process","status":"error","t":0.445154082}
+{"layer":"flood-process","message":"error: flooding: 51 answers for 0 inputs; restarting in 500 ms","t":0.445193497}
+{"detail":"pid 3883524 · misbehave flood","layer":"flood-process","status":"ok","t":0.968319342}
+{"detail":"flooding: 51 answers for 0 inputs; restarting in 1000 ms","layer":"flood-process","status":"error","t":0.971765504}
+{"layer":"flood-process","message":"error: flooding: 51 answers for 0 inputs; restarting in 1000 ms","t":0.97178409}
+{"detail":"pid 3883607 · misbehave flood","layer":"flood-process","status":"ok","t":1.993926686}
+{"detail":"flooding: 51 answers for 0 inputs; restarting in 2000 ms","layer":"flood-process","status":"error","t":1.996788615}
+{"layer":"flood-process","message":"error: flooding: 51 answers for 0 inputs; restarting in 2000 ms","t":1.996820466}
+{"detail":"pid 3883696 · misbehave flood","layer":"flood-process","status":"ok","t":3.987276612}
+{"detail":"flooding: 51 answers for 0 inputs; 5 times in a minute, not restarted","layer":"flood-process","status":"failed","t":3.992574467}
+{"layer":"flood-process","message":"failed: flooding: 51 answers for 0 inputs; 5 times in a minute, not restarted","t":3.992596008}
+{"detail":"","layer":"flood-process","status":"off","t":18.180340894}

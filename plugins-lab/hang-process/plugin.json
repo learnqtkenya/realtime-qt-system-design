@@ -1,0 +1,8 @@
+{
+    "id": "hang-process",
+    "name": "Lab: hang (process)",
+    "kind": "process",
+    "api": "1.0",
+    "exec": ["python3", "-I", "../misbehave.py", "hang", "60"],
+    "properties": {"port": 8765}
+}

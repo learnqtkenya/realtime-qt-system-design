@@ -15,7 +15,8 @@ namespace rec {
 
 static_assert(std::endian::native == std::endian::little, "the format is little-endian");
 
-enum class Type : quint16 { Lidar = 1, Tracks = 2, Events = 3, CameraMark = 4, Gap = 5 };
+// Overlay and Selection travel between the viewer and process plugins only (step 8).
+enum class Type : quint16 { Lidar = 1, Tracks = 2, Events = 3, CameraMark = 4, Gap = 5, Overlay = 6, Selection = 7 };
 
 // The Lidar record version. Int16Planar stores all low bytes, then all high bytes: same size,
 // but it compresses better (results/step-04/codec.md).

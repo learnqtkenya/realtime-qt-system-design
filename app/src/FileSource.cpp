@@ -60,7 +60,9 @@ std::optional<Sample> FileSource::decode(const rec::RecordRef &ref)
         else
             return std::nullopt;
         break;
-    case rec::Type::Gap: return std::nullopt;
+    case rec::Type::Gap:
+    case rec::Type::Overlay:
+    case rec::Type::Selection: return std::nullopt;
     }
     return s;
 }

@@ -1,0 +1,7 @@
+{
+    "id": "speed-vectors-qml",
+    "name": "Speed vectors (script in a QML engine)",
+    "kind": "script",
+    "api": "1.0",
+    "entry": "Layer.qml"
+}

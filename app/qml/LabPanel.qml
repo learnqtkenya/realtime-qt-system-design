@@ -320,6 +320,75 @@ Rectangle {
             }
 
             SectionTitle {
+                text: "Layers"
+            }
+            Caption {
+                text: "Plugins found at start · viewer API " + Plugins.api
+            }
+            Repeater {
+                model: Plugins.layers
+
+                delegate: ColumnLayout {
+                    id: layerRow
+
+                    required property var modelData
+                    readonly property string status: modelData.status
+
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        LabCheck {
+                            Layout.fillWidth: true
+                            text: layerRow.modelData.name
+                            checked: layerRow.modelData.enabled
+                            enabled: layerRow.status !== "refused"
+                            onToggled: Plugins.setEnabled(layerRow.modelData.id, checked)
+                        }
+                        Rectangle {
+                            Layout.preferredWidth: 9
+                            Layout.preferredHeight: 9
+                            radius: 4.5
+                            color: {
+                                switch (layerRow.status) {
+                                case "ok":
+                                    return "#34D399";
+                                case "slow":
+                                case "starting":
+                                    return "#FBBF24";
+                                case "off":
+                                    return "#475569";
+                                default:
+                                    return "#F87171";
+                                }
+                            }
+                        }
+                        Caption {
+                            text: layerRow.modelData.kind
+                        }
+                    }
+                    Caption {
+                        visible: text !== ""
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 24
+                        wrapMode: Text.WordWrap
+                        text: {
+                            const d = layerRow.modelData;
+                            if (d.status === "off")
+                                return "";
+                            const parts = [d.status + (d.detail ? ": " + d.detail : "")];
+                            if (d.cost)
+                                parts.push(d.cost);
+                            return parts.join(" · ");
+                        }
+                    }
+                }
+            }
+
+            SectionTitle {
                 visible: Network.role !== "client"
                 text: "Faults"
             }

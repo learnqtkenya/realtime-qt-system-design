@@ -1,0 +1,9 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.125896587}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.125932786}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.126061983}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.126067834}
+{"detail":"","layer":"slow-script","status":"starting","t":0.126184657}
+{"detail":"own QML engine, GUI thread","layer":"slow-script","status":"ok","t":0.128855551}
+{"detail":"30.1 ms per update on the GUI thread (budget 4 ms)","layer":"slow-script","status":"suspended","t":0.402642332}
+{"layer":"slow-script","message":"suspended: 30.1 ms per update on the GUI thread (budget 4 ms)","t":0.402686045}
+{"detail":"","layer":"slow-script","status":"off","t":18.160862677}

@@ -1,0 +1,7 @@
+{
+    "id": "future-api",
+    "name": "Lab: needs API 2.0",
+    "kind": "script",
+    "api": "2.0",
+    "entry": "Layer.qml"
+}

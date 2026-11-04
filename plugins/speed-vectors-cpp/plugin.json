@@ -1,0 +1,8 @@
+{
+    "id": "speed-vectors-cpp",
+    "name": "Speed vectors (C++ process)",
+    "description": "The same layer as a C++ process with no Qt",
+    "kind": "process",
+    "api": "1.0",
+    "exec": ["./speed-vectors-layer"]
+}

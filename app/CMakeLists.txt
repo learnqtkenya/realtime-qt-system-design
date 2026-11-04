@@ -16,6 +16,11 @@ set(VIEWER_SOURCES
     src/HealthMonitor.h src/HealthMonitor.cpp
     src/StreamServer.h src/StreamServer.cpp
     src/Wire.h src/Wire.cpp
+    src/Overlay.h src/Overlay.cpp
+    src/Plugins.h src/Plugins.cpp
+    src/ScriptLayer.h src/ScriptLayer.cpp
+    src/ProcessLayer.h src/ProcessLayer.cpp
+    src/LayerOverlay.h src/LayerOverlay.cpp
     src/Validate.h
     src/Timeline.h src/Timeline.cpp
     src/CameraFeed.h src/CameraFeed.cpp
@@ -75,6 +80,20 @@ target_link_libraries(viewer PRIVATE
     qtqmlpro_common qtqmlpro_commonplugin
     Qt6::Quick3D Qt6::QuickControls2 Qt6::Multimedia Qt6::GuiPrivate Qt6::Network PkgConfig::ZSTD ZLIB::ZLIB)
 
+# Plugins live next to the viewer in the build (and in a package): build/<preset>/plugins.
+add_custom_target(viewer_plugins ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/plugins ${CMAKE_BINARY_DIR}/plugins
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/plugins-lab ${CMAKE_BINARY_DIR}/plugins-lab
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/plugins/sdk ${CMAKE_BINARY_DIR}/plugins-lab/sdk
+    COMMENT "Copying plugins")
+add_dependencies(viewer viewer_plugins)
+# A process plugin in C++ with no Qt: the protocol is the API.
+add_executable(speed-vectors-layer ${CMAKE_SOURCE_DIR}/plugins/speed-vectors-cpp/main.cpp)
+target_include_directories(speed-vectors-layer PRIVATE ${CMAKE_SOURCE_DIR}/plugins/sdk/cpp)
+set_target_properties(speed-vectors-layer PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/plugins/speed-vectors-cpp)
+add_dependencies(speed-vectors-layer viewer_plugins)
+add_dependencies(viewer speed-vectors-layer)
+
 qt_add_executable(tst_viewer tests/tst_viewer.cpp
     src/Lab.h src/Lab.cpp
     src/HealthMonitor.h src/HealthMonitor.cpp
@@ -116,8 +135,18 @@ target_link_libraries(tst_models PRIVATE qtqmlpro_common Qt6::Test Qt6::Qml)
 add_test(NAME models COMMAND tst_models)
 
 qt_add_executable(tst_wire tests/tst_wire.cpp
-    src/StreamServer.h src/StreamServer.cpp src/Wire.h src/Wire.cpp
+    src/StreamServer.h src/StreamServer.cpp src/Wire.h src/Wire.cpp src/Overlay.h src/Overlay.cpp
     src/Codec.h src/Codec.cpp src/Recording.h src/Recording.cpp)
 target_include_directories(tst_wire PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(tst_wire PRIVATE qtqmlpro_common Qt6::Test Qt6::Network Qt6::Qml PkgConfig::ZSTD ZLIB::ZLIB)
 add_test(NAME wire COMMAND tst_wire)
+
+qt_add_executable(tst_plugins tests/tst_plugins.cpp
+    src/Plugins.h src/Plugins.cpp src/ScriptLayer.h src/ScriptLayer.cpp src/ProcessLayer.h src/ProcessLayer.cpp
+    src/Overlay.h src/Overlay.cpp src/Wire.h src/Wire.cpp src/Codec.h src/Codec.cpp src/Recording.h src/Recording.cpp
+    src/FrameStore.h src/FrameStore.cpp src/Selection.h src/Selection.cpp src/TrackIndex.h src/TrackIndex.cpp)
+target_include_directories(tst_plugins PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(tst_plugins PRIVATE PLUGINS_DIR="${CMAKE_BINARY_DIR}/plugins" PLUGINS_LAB_DIR="${CMAKE_BINARY_DIR}/plugins-lab")
+target_link_libraries(tst_plugins PRIVATE qtqmlpro_common Qt6::Test Qt6::Quick Qt6::Network PkgConfig::ZSTD ZLIB::ZLIB)
+add_dependencies(tst_plugins viewer_plugins speed-vectors-layer)
+add_test(NAME plugins COMMAND tst_plugins)

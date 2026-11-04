@@ -1,0 +1,8 @@
+{
+    "id": "flood-process",
+    "name": "Lab: flood (process)",
+    "kind": "process",
+    "api": "1.0",
+    "exec": ["python3", "-I", "../misbehave.py", "flood", "30"],
+    "properties": {"port": 8765}
+}

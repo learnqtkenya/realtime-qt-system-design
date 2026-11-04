@@ -1,0 +1,7 @@
+{
+    "id": "curious-item",
+    "name": "Lab: what can an item reach?",
+    "kind": "item",
+    "api": "1.0",
+    "entry": "Layer.qml"
+}

@@ -1,0 +1,8 @@
+{
+    "id": "speed-vectors-py",
+    "name": "Speed vectors (Python process)",
+    "description": "The same layer as a Python process",
+    "kind": "process",
+    "api": "1.0",
+    "exec": ["python3", "-I", "layer.py"]
+}

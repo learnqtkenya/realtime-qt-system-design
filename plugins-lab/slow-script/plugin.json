@@ -1,0 +1,8 @@
+{
+    "id": "slow-script",
+    "name": "Lab: 30 ms per update (script)",
+    "kind": "script",
+    "api": "1.0",
+    "entry": "Layer.qml",
+    "properties": {"ms": 30}
+}

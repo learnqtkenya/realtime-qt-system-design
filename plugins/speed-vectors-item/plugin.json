@@ -1,0 +1,8 @@
+{
+    "id": "speed-vectors-item",
+    "name": "Speed vectors (item)",
+    "description": "The same layer as a QML item in the viewer's engine",
+    "kind": "item",
+    "api": "1.0",
+    "entry": "Layer.qml"
+}

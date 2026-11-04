@@ -1,0 +1,7 @@
+{"detail":"plugin.json: unterminated object","layer":"broken-manifest","status":"refused","t":0.114159248}
+{"layer":"broken-manifest","message":"refused: plugin.json: unterminated object","t":0.114194856}
+{"detail":"needs API 2.0; this viewer offers 1.1","layer":"future-api","status":"refused","t":0.114321498}
+{"layer":"future-api","message":"refused: needs API 2.0; this viewer offers 1.1","t":0.114327229}
+{"detail":"","layer":"speed-vectors-py","status":"starting","t":0.114449762}
+{"detail":"pid 3829000 · speed vectors","layer":"speed-vectors-py","status":"ok","t":0.158772046}
+{"detail":"","layer":"speed-vectors-py","status":"off","t":23.149735745}
