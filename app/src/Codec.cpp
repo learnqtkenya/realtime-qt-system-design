@@ -1,6 +1,8 @@
 #include "Codec.h"
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
 
 namespace rec {
 
@@ -45,6 +47,29 @@ QByteArray encodeLidar(const qp::SensorFrame &frame, LidarEncoding encoding)
     return out;
 }
 
+namespace {
+
+// For the rare frame with values int16 can't hold (NaN, beyond ±327.67 m): those are stored as
+// kInt16Invalid and read back as NaN, so the record keeps "bad" as bad instead of clamping it into
+// something plausible. Scalar and branchy; the usual frame never comes here.
+void quantiseCarefully(const float *src, char *dst, size_t values, bool planar)
+{
+    constexpr float inv = 1.0f / kInt16Scale;
+    for (size_t i = 0; i < values; ++i) {
+        const float v = src[i] * inv;
+        const quint16 q = std::abs(v) <= 32767.0f ? quint16(qint16(v + (v >= 0 ? 0.5f : -0.5f)))
+                                                  : quint16(kInt16Invalid);
+        if (planar) {
+            dst[i] = char(q & 0xFF);
+            dst[values + i] = char(q >> 8);
+        } else {
+            std::memcpy(dst + 2 * i, &q, 2);
+        }
+    }
+}
+
+} // namespace
+
 void appendLidar(QByteArray &out, const qp::SensorFrame &frame, LidarEncoding encoding)
 {
     const int n = frame.cloud ? frame.cloud->count() : 0;
@@ -65,6 +90,15 @@ void appendLidar(QByteArray &out, const qp::SensorFrame &frame, LidarEncoding en
     char *__restrict dst = out.data() + at;
     const float *__restrict src = n ? frame.cloud->xyz.data() : nullptr;
     constexpr float inv = 1.0f / kInt16Scale;
+    // A separate counting pass (an int sum: GCC won't vectorise a bool reduction). It costs a
+    // second read of the frame, 0.18 ms; folding it into the loop below made that loop 3x slower.
+    int unfit = 0;
+    for (size_t i = 0; i < values; ++i)
+        unfit += !(std::abs(src[i] * inv) <= 32767.0f); // NaN fails this
+    if (unfit) {
+        quantiseCarefully(src, dst, values, encoding == LidarEncoding::Int16Planar);
+        return;
+    }
     const auto quantise = [inv](float x) {
         const float v = std::clamp(x * inv, -32767.0f, 32767.0f);
         return quint16(qint16(v + (v >= 0 ? 0.5f : -0.5f)));
@@ -115,13 +149,26 @@ std::optional<qp::SensorFrame> decodeLidar(quint16 version, int sensor, qint64 t
         float *dst = cloud->xyz.data();
         if (version == quint16(LidarEncoding::Int16)) {
             const auto *q = reinterpret_cast<const UnalignedInt16 *>(p);
-            for (size_t i = 0; i < values; ++i)
+            int invalid = 0;
+            for (size_t i = 0; i < values; ++i) {
                 dst[i] = float(q[i]) * scale;
+                invalid += q[i] == kInt16Invalid;
+            }
+            for (size_t i = 0; invalid && i < values; ++i)
+                if (q[i] == kInt16Invalid)
+                    dst[i] = std::numeric_limits<float>::quiet_NaN();
         } else {
             const auto *lo = reinterpret_cast<const quint8 *>(p);
             const quint8 *hi = lo + values;
-            for (size_t i = 0; i < values; ++i)
-                dst[i] = float(qint16(quint16(lo[i] | (hi[i] << 8)))) * scale;
+            int invalid = 0;
+            for (size_t i = 0; i < values; ++i) {
+                const auto q = qint16(quint16(lo[i] | (hi[i] << 8)));
+                dst[i] = float(q) * scale;
+                invalid += q == kInt16Invalid;
+            }
+            for (size_t i = 0; invalid && i < values; ++i)
+                if (lo[i] == 0x00 && hi[i] == 0x80)
+                    dst[i] = std::numeric_limits<float>::quiet_NaN();
         }
     } else {
         return std::nullopt;

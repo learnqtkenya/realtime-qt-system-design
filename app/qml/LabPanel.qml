@@ -258,6 +258,94 @@ Rectangle {
             }
 
             SectionTitle {
+                text: "Sensor health"
+            }
+            Repeater {
+                model: Health.streams
+
+                delegate: RowLayout {
+                    id: healthRow
+
+                    required property var modelData
+                    readonly property string status: modelData.status
+
+                    Layout.fillWidth: true
+                    spacing: 6
+
+                    Rectangle {
+                        Layout.preferredWidth: 9
+                        Layout.preferredHeight: 9
+                        radius: 4.5
+                        color: {
+                            switch (healthRow.status) {
+                            case "ok":
+                                return "#34D399";
+                            case "degraded":
+                            case "late":
+                                return "#FBBF24";
+                            case "corrupt":
+                            case "stale":
+                                return "#F87171";
+                            default:
+                                return "#475569";
+                            }
+                        }
+                    }
+                    Caption {
+                        Layout.preferredWidth: 70
+                        color: "#E2E8F0"
+                        text: healthRow.modelData.name
+                    }
+                    Caption {
+                        Layout.preferredWidth: 56
+                        text: healthRow.status
+                    }
+                    Caption {
+                        Layout.fillWidth: true
+                        elide: Text.ElideRight
+                        text: healthRow.status === "off" ? "" : healthRow.modelData.hz.toFixed(0) + " Hz · " + healthRow.modelData.ageMs.toFixed(0) + " ms old" + (healthRow.modelData.dropPct > 0 ? " · " + healthRow.modelData.dropPct.toFixed(0) + "% lost" : "") + (healthRow.modelData.rejected > 0 ? " · " + healthRow.modelData.rejected + " rejected" : "") + (healthRow.modelData.reordered > 0 ? " · " + healthRow.modelData.reordered + " out of order" : "")
+                    }
+                }
+            }
+
+            SectionTitle {
+                text: "Faults"
+            }
+            RowLayout {
+                Layout.fillWidth: true
+
+                ComboBox {
+                    id: faultStream
+
+                    readonly property var streams: [0, 1, 2, 3, 4, 10]
+
+                    Layout.fillWidth: true
+                    focusPolicy: Qt.NoFocus
+                    model: ["lidar 0", "lidar 1", "lidar 2", "lidar 3", "tracks", "GUI thread"]
+                }
+                Caption {
+                    text: Lab.faults[String(faultStream.streams[faultStream.currentIndex])] ?? "no fault"
+                }
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 4
+
+                Repeater {
+                    model: faultStream.currentIndex === 5 ? [["block 300 ms", "gui300"], ["clear", "clear"]] : [["drop 50%", "drop50"], ["delay 300 ms", "delay300"], ["jitter ±100", "jitter100"], ["corrupt", "corrupt"], ["stall", "stall"], ["clear", "clear"]]
+
+                    delegate: Button {
+                        required property var modelData
+
+                        text: modelData[0]
+                        focusPolicy: Qt.NoFocus
+                        font.pixelSize: 11
+                        onClicked: Lab.injectFault(faultStream.streams[faultStream.currentIndex], modelData[1])
+                    }
+                }
+            }
+
+            SectionTitle {
                 text: Lab.viewMode === "orbit" ? "Renderer (3D orbit always uses Quick 3D)" : "Renderer"
             }
             ComboBox {

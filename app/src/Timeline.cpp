@@ -1,6 +1,8 @@
 #include "Timeline.h"
 
 #include "FileSource.h"
+#include "HealthMonitor.h"
+#include "Validate.h"
 #include "qp/StageStats.h"
 
 #include <QCoreApplication>
@@ -41,13 +43,48 @@ std::shared_ptr<rec::Writer> Timeline::writer() const
 
 void Timeline::ingestLidar(const qp::SensorFrame &frame)
 {
+    if (m_health)
+        m_health->arrived(qp::kLidarStream0 + frame.sensorId, frame.seq, frame.captureNs);
+    if (m_validate) {
+        const qint64 t0 = qp::nowNs();
+        const bool ok = validate::lidar(frame);
+        qp::StageStats::instance().add(QStringLiteral("validate_ms"), double(qp::nowNs() - t0) / 1e6);
+        if (!ok) {
+            if (m_health)
+                m_health->rejected(qp::kLidarStream0 + frame.sensorId);
+            return;
+        }
+    }
     if (const auto w = writer())
         w->addLidar(frame);
-    m_presenter.ingest([&] { m_history->addLidar(frame); }, [&] { m_sinks.lidar(frame); });
+    m_presenter.ingest([&] { m_history->addLidar(frame); }, [&] {
+        // Arrival order isn't capture order (a jittery link): "latest arrived" can be older than
+        // what is on screen.
+        qint64 &newest = m_newestShownLidar[size_t(frame.sensorId) & 15];
+        if (frame.captureNs < newest) {
+            qp::StageStats::instance().add(m_keepOrder ? QStringLiteral("lidar_older_not_shown")
+                                                       : QStringLiteral("lidar_shown_backwards"), 1);
+            if (m_keepOrder)
+                return;
+        }
+        newest = std::max<qint64>(newest, frame.captureNs);
+        m_sinks.lidar(frame);
+    });
 }
 
-void Timeline::ingestTracks(const qp::TrackSetPtr &set)
+void Timeline::ingestTracks(const qp::TrackSetPtr &in)
 {
+    if (m_health && in)
+        m_health->arrived(qp::kTracksStream, in->seq, in->captureNs);
+    qp::TrackSetPtr set = in;
+    if (m_validate) {
+        qp::TrackSetPtr cleaned;
+        if (const int bad = validate::tracks(in, &cleaned); bad > 0) {
+            if (m_health)
+                m_health->rejected(qp::kTracksStream);
+            set = cleaned;
+        }
+    }
     if (const auto w = writer())
         w->addTracks(set);
     m_presenter.ingest([&] { m_history->addTracks(set); }, [&] { m_sinks.tracks(set); });
@@ -55,6 +92,8 @@ void Timeline::ingestTracks(const qp::TrackSetPtr &set)
 
 void Timeline::ingestEvents(const qp::EventBatchPtr &batch)
 {
+    if (m_health && batch && !batch->empty())
+        m_health->arrived(qp::kEventsStream, ++m_eventBatches, batch->front().captureNs);
     if (const auto w = writer())
         w->addEvents(batch);
     m_presenter.ingest([&] { m_history->addEvents(batch); }, [&] { m_sinks.events(batch, false); });
@@ -62,6 +101,8 @@ void Timeline::ingestEvents(const qp::EventBatchPtr &batch)
 
 void Timeline::ingestCameraMark(const rec::CameraMark &mark)
 {
+    if (m_health && mark.camera >= 0 && mark.camera < 4)
+        m_health->arrived(qp::kCameraStream0 + mark.camera, ++m_cameraFrames[size_t(mark.camera)], mark.captureNs);
     if (const auto w = writer())
         w->addCameraMark(mark);
     m_history->addCameraMark(mark);

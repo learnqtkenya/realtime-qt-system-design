@@ -26,6 +26,7 @@ constexpr quint16 kEventsVersion = 1;
 constexpr quint16 kCameraMarkVersion = 1;
 constexpr quint16 kGapVersion = 1;
 constexpr float kInt16Scale = 0.01f; // metres per step: ±327 m in 1 cm steps
+constexpr qint16 kInt16Invalid = -32768; // never a quantised value (those stop at ±32767)
 
 struct CameraMark
 {

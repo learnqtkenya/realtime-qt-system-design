@@ -12,6 +12,8 @@ set(VIEWER_SOURCES
     src/Proxies.h src/Proxies.cpp
     src/TrackInstancing.h src/TrackInstancing.cpp
     src/TrackOverlay.h src/TrackOverlay.cpp
+    src/HealthMonitor.h src/HealthMonitor.cpp
+    src/Validate.h
     src/Timeline.h src/Timeline.cpp
     src/CameraFeed.h src/CameraFeed.cpp
     src/Cameras.h src/Cameras.cpp
@@ -72,6 +74,7 @@ target_link_libraries(viewer PRIVATE
 
 qt_add_executable(tst_viewer tests/tst_viewer.cpp
     src/Lab.h src/Lab.cpp
+    src/HealthMonitor.h src/HealthMonitor.cpp
     src/LidarHub.h src/LidarHub.cpp
     src/LidarMailbox.h src/LidarMailbox.cpp
     src/LidarPipeline.h src/LidarPipeline.cpp)

@@ -36,6 +36,21 @@ struct Workload
     double pointsPerSecond() const { return sensors * double(pointsPerFrame) * lidarRateHz; }
 };
 
+// What can go wrong with a stream (step 6). Delayed samples keep their capture time.
+struct Fault
+{
+    double dropRate = 0; // 0..1; dropped samples still use up a sequence number
+    double delayMs = 0;
+    double jitterMs = 0; // delay spread uniformly over 0..2× this, on top of delayMs: samples arrive out of order
+    bool corrupt = false; // lidar: 1% NaN points and 0.1% at 1e6 m; tracks: one NaN position
+    bool stall = false;
+    bool any() const { return dropRate > 0 || delayMs > 0 || jitterMs > 0 || corrupt || stall; }
+};
+
+// Stream numbers shared by the simulator, the faults and the health monitor.
+enum StreamIndex { kLidarStream0 = 0, kTracksStream = 4, kEventsStream = 5, kCameraStream0 = 6, kGuiStream = 10,
+                   kStreamCount = 11 };
+
 struct PointCloud
 {
     std::vector<float> xyz;

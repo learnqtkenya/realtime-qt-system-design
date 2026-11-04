@@ -11,6 +11,7 @@
 namespace qp {
 class SensorSimulator;
 }
+class HealthMonitor;
 
 // The lab panel's model: which renderer is live and how heavy the world is.
 class Lab : public QObject
@@ -33,6 +34,8 @@ class Lab : public QObject
     Q_PROPERTY(bool chartsEnabled READ chartsEnabled CONSTANT FINAL)
     Q_PROPERTY(QString viewMode READ viewMode WRITE setViewMode NOTIFY viewModeChanged FINAL)
     Q_PROPERTY(bool lodEnabled READ lodEnabled WRITE setLodEnabled NOTIFY lodEnabledChanged FINAL)
+    // Active fault per stream number, as text ("stall", "drop50", ...).
+    Q_PROPERTY(QVariantMap faults READ faults NOTIFY faultsChanged FINAL)
 
 public:
     Lab(LidarHub *hub, const qp::Workload &workload, const QString &renderer, bool chartsEnabled,
@@ -41,6 +44,7 @@ public:
     // The workload is clamped to the renderer's cap before any simulator exists.
     const qp::Workload &workload() const { return m_workload; }
     void setSimulator(qp::SensorSimulator *sim) { m_sim = sim; }
+    void setHealth(HealthMonitor *health) { m_health = health; }
 
     static QStringList rendererIds();
 
@@ -71,6 +75,10 @@ public:
     Q_INVOKABLE void startCycle(double intervalSec, const QStringList &ids = {});
     // Alternates points per sensor between 20k and the renderer's cap; used by the load-change test.
     Q_INVOKABLE void startLoadCycle(double intervalSec);
+    // kind: drop50, delay300, jitter100, corrupt, stall, clear; gui300 blocks the GUI thread for
+    // 300 ms every 2 s (stream ignored).
+    Q_INVOKABLE void injectFault(int stream, const QString &kind);
+    QVariantMap faults() const { return m_faults; }
     // The frame monitor saw new content on screen.
     Q_INVOKABLE void noteContentShown();
 
@@ -79,13 +87,18 @@ signals:
     void viewModeChanged();
     void lodEnabledChanged();
     void workloadChanged();
+    void faultsChanged();
 
 private:
+    void blockGui();
     void workloadEdited();
     void enforceCap();
     void applyRoute();
 
     qp::SensorSimulator *m_sim = nullptr;
+    HealthMonitor *m_health = nullptr;
+    QVariantMap m_faults;
+    QTimer m_guiBlock;
     LidarHub *m_hub;
     qp::Workload m_workload;
     QString m_renderer;

@@ -245,6 +245,33 @@ def _step05_series():
     return s
 
 
+def _step06_series():
+    nominal = ["--points", 150_000, "--rate", 10, "--objects", 200, "--events", 200, "--variant", "rhi"]
+    peak = ["--points", 300_000, "--rate", 20, "--objects", 800, "--events", 2000, "--variant", "rhi"]
+
+    def setting(**kv):
+        return [a for k, v in kv.items() for a in ("--set", f"{k}={v}")]
+
+    faults = [("lidar2-stall", 2, "stall"), ("lidar2-delay300", 2, "delay300"), ("lidar2-drop50", 2, "drop50"),
+              ("lidar2-corrupt", 2, "corrupt"), ("lidar2-jitter100", 2, "jitter100"), ("tracks-corrupt", 4, "corrupt"),
+              ("tracks-stall", 4, "stall"), ("gui-block300", 10, "gui300")]
+    s = {"detect": [(f"detect-{name}-r{n}", [*nominal, *setting(fault=f"{stream}:{kind}@5", faultClear=10)], 12)
+                    for n in (1, 2, 3) for name, stream, kind in faults]}
+    s["validate"] = [(f"validate-{v}-{load}-r{n}", [*args, *setting(validate=v, cameras=0)], 20)
+                     for n in (1, 2) for load, args in (("nominal", nominal), ("peak", peak)) for v in (0, 1)]
+    s["novalidate"] = [(f"novalidate-{name}", [*nominal, *setting(validate=0, fault=f"{stream}:corrupt@5")], 12)
+                       for name, stream in (("lidar2-corrupt", 2), ("tracks-corrupt", 4))]
+    s["jitter-record"] = [("jitter-record", [*nominal, *setting(fault="2:jitter100@4", record=1, recordStopAt=12,
+                                                                  recordPath=bench.BUILD / "recordings/step-06/jitter.qprec")], 12)]
+    s["soak"] = [("quiet-nominal-300s", [*nominal], 300), ("quiet-peak-120s", [*peak], 120)]
+    s["order"] = [(f"order-keep{k}-r{n}", [*nominal, *setting(fault="2:jitter100@4", keepOrder=k)], 12)
+                  for n in (1, 2) for k in (0, 1)]
+    return s
+
+
+MODULES["step-06"] = ("app/viewer", ["validate_ms", "tracks_rebuild_ms", "event_reset_ms"])
+MODULE_ENV["step-06"] = {"QSG_RHI_PROFILE": "1"}
+RATES["step-06"] = []
 MODULES["step-05"] = ("app/viewer", ["tracks_rebuild_ms", "event_reset_ms", "instancing_build_ms",
                                      "event_filter_ms"])
 MODULE_ENV["step-05"] = {"QSG_RHI_PROFILE": "1"}
@@ -254,7 +281,7 @@ MODULES["step-04"] = ("app/viewer", ["history_add_ms", "seek_ms", "present_late_
 MODULE_ENV["step-04"] = {"QSG_RHI_PROFILE": "1"}
 RATES["step-04"] = ["camera_decoded", "camera_presented"]
 MODULE_SERIES = {"m04": _m04_series(), "step-01": _step01_series(), "step-02": _step02_series(),
-                 "step-03": _step03_series(), "step-04": _step04_series(), "step-05": _step05_series()}
+                 "step-03": _step03_series(), "step-04": _step04_series(), "step-05": _step05_series(), "step-06": _step06_series()}
 
 EXTRA_SERIES = {
     "m03": {

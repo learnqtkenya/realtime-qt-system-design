@@ -1,5 +1,6 @@
 #include "Lab.h"
 
+#include "HealthMonitor.h"
 #include "qp/SensorSimulator.h"
 #include "qp/StageStats.h"
 
@@ -51,6 +52,7 @@ Lab::Lab(LidarHub *hub, const qp::Workload &workload, const QString &renderer, b
         if (m_sim)
             m_sim->setWorkload(m_workload);
     });
+    connect(&m_guiBlock, &QTimer::timeout, this, &Lab::blockGui);
     connect(&m_loadCycle, &QTimer::timeout, this, [this] {
         setPointsPerSensor(pointsPerSensor() == 20'000 ? maxPoints() : 20'000);
     });
@@ -201,6 +203,48 @@ void Lab::startCycle(double intervalSec, const QStringList &ids)
 void Lab::startLoadCycle(double intervalSec)
 {
     m_loadCycle.start(int(intervalSec * 1000));
+}
+
+// The gui300 fault: the GUI thread busy for 300 ms, as a long synchronous call would make it.
+void Lab::blockGui()
+{
+    const qint64 until = qp::nowNs() + 300'000'000;
+    while (qp::nowNs() < until) {
+    }
+}
+
+void Lab::injectFault(int stream, const QString &kind)
+{
+    if (kind == QLatin1String("gui300")) {
+        m_guiBlock.start(2000);
+        QTimer::singleShot(0, this, &Lab::blockGui); // the first block now, not in 2 s
+        stream = qp::kGuiStream;
+    } else if (kind == QLatin1String("clear") && stream == qp::kGuiStream) {
+        m_guiBlock.stop();
+    } else {
+        qp::Fault f;
+        if (kind == QLatin1String("drop50"))
+            f.dropRate = 0.5;
+        else if (kind == QLatin1String("delay300"))
+            f.delayMs = 300;
+        else if (kind == QLatin1String("jitter100"))
+            f.jitterMs = 100;
+        else if (kind == QLatin1String("corrupt"))
+            f.corrupt = true;
+        else if (kind == QLatin1String("stall"))
+            f.stall = true;
+        else if (kind != QLatin1String("clear"))
+            return;
+        if (m_sim)
+            m_sim->setFault(stream, f);
+    }
+    if (m_health)
+        m_health->noteFault(stream, kind);
+    if (kind == QLatin1String("clear"))
+        m_faults.remove(QString::number(stream));
+    else
+        m_faults.insert(QString::number(stream), kind);
+    emit faultsChanged();
 }
 
 void Lab::noteContentShown()

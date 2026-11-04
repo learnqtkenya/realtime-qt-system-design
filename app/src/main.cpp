@@ -2,6 +2,7 @@
 #include "CanvasFeed.h"
 #include "EventLogModel.h"
 #include "FrameStore.h"
+#include "HealthMonitor.h"
 #include "InputRobot.h"
 #include "Lab.h"
 #include "LidarHub.h"
@@ -157,6 +158,47 @@ int main(int argc, char *argv[])
         timeline.setRecordingInfo(info);
     }
 
+    // Step 6: who finds out when a stream fails. Its own thread; the GUI thread is one of the streams.
+    HealthMonitor health;
+    {
+        const qp::Workload &w = lab.workload();
+        for (int i = 0; i < w.sensors && i < 4; ++i)
+            health.configure(qp::kLidarStream0 + i, QStringLiteral("lidar %1").arg(i), 1000.0 / w.lidarRateHz, 100);
+        health.configure(qp::kTracksStream, QStringLiteral("tracks"), 1000.0 / w.trackRateHz, 100);
+        if (w.eventsPerSecond > 0)
+            health.configure(qp::kEventsStream, QStringLiteral("events"), 50, 100);
+        for (CameraFeed *f : cameras.feeds())
+            health.configure(qp::kCameraStream0 + f->index(), QStringLiteral("camera %1").arg(f->index()), 1000.0 / 30, 100);
+        health.configure(qp::kGuiStream, QStringLiteral("GUI thread"), 20, 1e9);
+    }
+    QObject::connect(&lab, &Lab::workloadChanged, &health, [&lab, &health] {
+        for (int i = 0; i < lab.sensors() && i < 4; ++i)
+            health.setPeriod(qp::kLidarStream0 + i, 1000.0 / lab.rateHz());
+    });
+    const bool hideStale = opts->extra(QStringLiteral("stalePolicy"), QStringLiteral("hide")).toString() == QLatin1String("hide");
+    std::atomic<quint64> healthSeq{0};
+    health.setStatusSink([&timeline, &hub, &healthSeq, hideStale](int stream, HealthMonitor::Status, HealthMonitor::Status to,
+                                                                   const QString &why) {
+        using S = HealthMonitor::Status;
+        qp::EventRecord e;
+        e.seq = ++healthSeq;
+        e.captureNs = qp::nowNs();
+        e.severity = to == S::Stale || to == S::Corrupt ? 2 : (to == S::Ok ? 0 : 1);
+        e.source = QStringLiteral("health");
+        static const char *names[] = {"lidar 0", "lidar 1", "lidar 2", "lidar 3", "tracks", "events",
+                                      "camera 0", "camera 1", "camera 2", "camera 3", "GUI thread"};
+        e.text = QStringLiteral("%1 %2%3").arg(QLatin1String(names[stream]), HealthMonitor::statusName(to),
+                                               why.isEmpty() ? QString() : QStringLiteral(": ") + why);
+        timeline.ingestEvents(std::make_shared<qp::EventBatch>(qp::EventBatch{e}));
+        // Stale lidar: stop showing its last frame as if it were current.
+        if (hideStale && to == S::Stale && stream >= qp::kLidarStream0 && stream < qp::kLidarStream0 + 4)
+            hub.submit(qp::SensorFrame{stream - qp::kLidarStream0, 0, qp::nowNs(), std::make_shared<qp::PointCloud>()});
+    });
+    timeline.setHealth(&health, opts->extra(QStringLiteral("validate"), true).toBool(),
+                       opts->extra(QStringLiteral("keepOrder"), true).toBool());
+    lab.setHealth(&health);
+    health.start();
+
     std::unique_ptr<qp::SensorSimulator> sim;
     if (!opts->noSim()) {
         sim = std::make_unique<qp::SensorSimulator>(lab.workload());
@@ -219,6 +261,7 @@ int main(int argc, char *argv[])
     QJSEngine::setObjectOwnership(&selection, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&cameras, QJSEngine::CppOwnership);
     QJSEngine::setObjectOwnership(&timeline, QJSEngine::CppOwnership);
+    QJSEngine::setObjectOwnership(&health, QJSEngine::CppOwnership);
 
     QQmlApplicationEngine engine;
     QObject::connect(
@@ -229,10 +272,21 @@ int main(int argc, char *argv[])
     engine.setExternalSingletonInstance("Viewer", "Selection", &selection);
     engine.setExternalSingletonInstance("Viewer", "Cameras", &cameras);
     engine.setExternalSingletonInstance("Viewer", "Timeline", &timeline);
+    engine.setExternalSingletonInstance("Viewer", "Health", &health);
     engine.loadFromModule("Viewer", "Main");
     // Started after the window exists, so the panels have their sinks.
     cameras.setEnabled(opts->extra(QStringLiteral("cameras"), true).toBool());
 
+    // --set fault=<stream>:<kind>@<s> [--set faultClear=<s>]: inject a fault (and clear it) on schedule.
+    if (const QString fault = opts->extra(QStringLiteral("fault")).toString(); !fault.isEmpty()) {
+        const QStringList at = fault.split(u'@');
+        const QStringList what = at.value(0).split(u':');
+        const int stream = what.value(0).toInt();
+        const QString kind = what.value(1);
+        QTimer::singleShot(int(at.value(1).toDouble() * 1000), &lab, [&lab, stream, kind] { lab.injectFault(stream, kind); });
+        if (const double clear = opts->extra(QStringLiteral("faultClear"), 0).toDouble(); clear > 0)
+            QTimer::singleShot(int(clear * 1000), &lab, [&lab, stream] { lab.injectFault(stream, QStringLiteral("clear")); });
+    }
     // --set selectId=<id>: select an object after a second (screenshots).
     if (const int id = opts->extra(QStringLiteral("selectId"), -1).toInt(); id >= 0)
         QTimer::singleShot(1000, &selection, [&selection, id] { selection.select(id); });

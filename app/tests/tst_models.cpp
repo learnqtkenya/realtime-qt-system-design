@@ -7,6 +7,8 @@
 #include <QSignalSpy>
 #include <QtTest>
 
+#include <cmath>
+#include <limits>
 #include <random>
 
 namespace {
@@ -88,6 +90,34 @@ private slots:
         std::const_pointer_cast<qp::TrackSet>(s)->tracks[1].cls = 0;
         m.apply(s);
         QCOMPARE(proxy.index(0, 0).data(TrackListModel::TrackIdRole).toUInt(), 3u);
+    }
+
+    // Without validation: does one NaN row break the table's order?
+    void nanRowAndSortOrder()
+    {
+        TrackListModel m(nullptr);
+        m.setUpdates(TrackListModel::Updates::Diff);
+        TrackTableProxy proxy(&m);
+        proxy.setSortKey(QStringLiteral("distance"));
+        auto s = std::make_shared<qp::TrackSet>();
+        std::mt19937 rng(11);
+        for (quint32 i = 0; i < 200; ++i)
+            s->tracks.push_back({1000 + i, float(rng() % 1000) / 10.f, float(rng() % 1000) / 10.f, 0, 1, 4, 2, 0});
+        s->tracks[57].x = std::numeric_limits<float>::quiet_NaN();
+        m.apply(s);
+        int inversions = 0, nanAt = -1;
+        double prev = -1;
+        for (int r = 0; r < proxy.rowCount(); ++r) {
+            const double d = proxy.index(r, 0).data(TrackListModel::DistanceRole).toDouble();
+            if (std::isnan(d)) {
+                nanAt = r;
+                continue;
+            }
+            inversions += d < prev;
+            prev = d;
+        }
+        qInfo("one NaN among 200 rows: it sorted to row %d; %d out-of-order neighbours among the rest", nanAt, inversions);
+        QCOMPARE(proxy.rowCount(), 200);
     }
 
     void boundedLogInsertsAndTrims()

@@ -5,6 +5,8 @@
 #include <QTimer>
 
 #include <algorithm>
+#include <limits>
+#include <map>
 #include <cmath>
 #include <numbers>
 
@@ -130,6 +132,7 @@ public:
 
 public slots:
     void init() { apply(m_w, true); }
+    void setFault(int stream, const Fault &fault) { m_faults[stream] = fault; }
 
     // Simulator thread. Rebuilds only what the new workload changes.
     void apply(const Workload &w, bool first = false)
@@ -198,16 +201,60 @@ private:
         }
     }
 
+    // Applies the stream's fault: false = don't send. delayNs: how much later to send.
+    bool faulted(int stream, int64_t *delayNs)
+    {
+        *delayNs = 0;
+        const auto it = m_faults.find(stream);
+        if (it == m_faults.end() || !it->second.any())
+            return true;
+        const Fault &f = it->second;
+        if (f.stall || (f.dropRate > 0 && m_faultRng.uniform() < f.dropRate))
+            return false;
+        // Jitter is centred on its own size: a sample can't leave before it's captured, so a
+        // ±J spread around zero would really be 0..J and never reorder anything.
+        const double jitter = f.jitterMs > 0 ? f.jitterMs + m_faultRng.range(-float(f.jitterMs), float(f.jitterMs)) : 0.0;
+        *delayNs = int64_t(std::max(0.0, f.delayMs + jitter) * 1e6);
+        return true;
+    }
+    bool corrupting(int stream) const
+    {
+        const auto it = m_faults.find(stream);
+        return it != m_faults.end() && it->second.corrupt;
+    }
+    template <typename F> void send(int64_t delayNs, F &&emitIt)
+    {
+        if (delayNs <= 0)
+            emitIt();
+        else
+            QTimer::singleShot(std::chrono::nanoseconds(delayNs), Qt::PreciseTimer, this, std::forward<F>(emitIt));
+    }
+
     void emitLidar(int sensor)
     {
         SensorFrame f;
         f.sensorId = sensor;
         f.seq = m_lidarSeq[size_t(sensor)]++;
         f.captureNs = nowNs() - int64_t(m_w.lidarDelayMs * 1e6);
+        int64_t delayNs = 0;
+        if (!faulted(kLidarStream0 + sensor, &delayNs))
+            return;
         const auto &pooled = m_pool[size_t(sensor)][m_w.still ? 0 : f.seq % kPoolVariants];
-        f.cloud = m_w.freshClouds ? std::make_shared<const PointCloud>(*pooled) : pooled;
+        if (corrupting(kLidarStream0 + sensor)) {
+            auto bad = std::make_shared<PointCloud>(*pooled);
+            for (size_t i = 0; i < bad->xyz.size(); i += 3) {
+                const uint32_t r = m_faultRng.next() % 1000;
+                if (r < 10)
+                    bad->xyz[i] = std::numeric_limits<float>::quiet_NaN();
+                else if (r == 10)
+                    bad->xyz[i + 1] = 1e6f;
+            }
+            f.cloud = std::move(bad);
+        } else {
+            f.cloud = m_w.freshClouds ? std::make_shared<const PointCloud>(*pooled) : pooled;
+        }
         m_owner->m_lidarEmitted.fetch_add(1, std::memory_order_relaxed);
-        emit m_owner->lidarFrame(f);
+        send(delayNs, [this, f] { emit m_owner->lidarFrame(f); });
     }
 
     void emitTracks()
@@ -226,9 +273,14 @@ private:
         auto set = std::make_shared<TrackSet>();
         set->seq = m_trackSeq++;
         set->captureNs = nowNs();
+        int64_t delayNs = 0;
+        if (!faulted(kTracksStream, &delayNs))
+            return;
         set->tracks = m_tracks;
+        if (corrupting(kTracksStream) && !set->tracks.empty())
+            set->tracks[m_faultRng.next() % set->tracks.size()].x = std::numeric_limits<float>::quiet_NaN();
         m_owner->m_trackEmitted.fetch_add(1, std::memory_order_relaxed);
-        emit m_owner->trackSet(TrackSetPtr(std::move(set)));
+        send(delayNs, [this, set = TrackSetPtr(std::move(set))] { emit m_owner->trackSet(set); });
     }
 
     void emitEvents()
@@ -274,6 +326,8 @@ private:
     std::vector<quint64> m_lidarSeq;
     std::vector<Track> m_tracks;
     std::vector<QTimer *> m_timers;
+    std::map<int, Fault> m_faults;
+    Rng m_faultRng{12345}; // separate, so faults don't change the scene's random sequence
     quint64 m_trackSeq = 0;
     quint64 m_eventSeq = 0;
     double m_eventCarry = 0;
@@ -299,6 +353,12 @@ void SensorSimulator::setWorkload(const Workload &workload)
 {
     m_workload = workload;
     QMetaObject::invokeMethod(m_worker, [w = m_worker, workload] { w->apply(workload); }, Qt::QueuedConnection);
+}
+
+void SensorSimulator::setFault(int stream, const Fault &fault)
+{
+    QMetaObject::invokeMethod(m_worker, [w = m_worker, stream, fault] { w->setFault(stream, fault); },
+                              Qt::QueuedConnection);
 }
 
 void SensorSimulator::start()

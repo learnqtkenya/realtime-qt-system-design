@@ -10,12 +10,15 @@
 #include <QTimer>
 #include <QVariantList>
 
+#include <array>
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
 
 class FileSource;
+class HealthMonitor;
 
 // The timeline bar's model: live, pause, play, scrub, record, open a recording.
 class Timeline : public QObject
@@ -64,6 +67,15 @@ public:
     void ingestEvents(const qp::EventBatchPtr &batch);
     // Any thread.
     void ingestCameraMark(const rec::CameraMark &mark);
+    // Arrivals and rejections are reported here; with validation, bad samples stop at ingest.
+    // keepOrder: in live pass-through, a lidar frame older than the newest already shown for
+    // its sensor is not shown (history and recordings still keep it).
+    void setHealth(HealthMonitor *health, bool validate, bool keepOrder)
+    {
+        m_health = health;
+        m_validate = validate;
+        m_keepOrder = keepOrder;
+    }
     // Written into every new recording's header.
     void setRecordingInfo(const QJsonObject &info) { m_info = info; }
 
@@ -117,6 +129,12 @@ private:
     void sweepThreads();
     std::shared_ptr<rec::Writer> writer() const;
 
+    HealthMonitor *m_health = nullptr;
+    bool m_validate = true;
+    bool m_keepOrder = true;
+    std::array<qint64, 16> m_newestShownLidar{}; // pass-through only; under the presenter's ingest lock
+    std::atomic<quint64> m_eventBatches{0};
+    std::array<std::atomic<quint64>, 4> m_cameraFrames{};
     Presenter::Sinks m_sinks;
     Options m_options;
     QJsonObject m_info;

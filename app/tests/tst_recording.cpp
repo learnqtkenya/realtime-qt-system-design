@@ -7,6 +7,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
+#include <limits>
 #include <random>
 
 namespace {
@@ -99,6 +100,25 @@ private slots:
                 QCOMPARE(err, 0.0f);
             else
                 QVERIFY2(err <= 0.005f + 2e-5f, qPrintable(QString::number(err)));
+        }
+    }
+
+    // Without validation, what does the recording keep of bad points? (It used to clamp 1e6 m to
+    // 327.67 m, and NaN came out as 0 by undefined behaviour.)
+    void int16RecordsOfBadPoints()
+    {
+        auto cloud = std::make_shared<qp::PointCloud>();
+        cloud->xyz = {1e6f, 2.f, 3.f, std::numeric_limits<float>::quiet_NaN(), 5.f, 6.f};
+        const qp::SensorFrame f{0, 1, 0, cloud};
+        for (auto enc : {rec::LidarEncoding::Int16, rec::LidarEncoding::Int16Planar}) {
+            const QByteArray b = rec::encodeLidar(f, enc);
+            const auto back = rec::decodeLidar(quint16(enc), 0, 0, b.constData(), size_t(b.size()));
+            QVERIFY(back);
+            qInfo("encoding %d: 1e6 m comes back as %g m, NaN as %g", int(enc), double(back->cloud->xyz[0]),
+                  double(back->cloud->xyz[3]));
+            QVERIFY(std::isnan(back->cloud->xyz[0])); // not clamped into something plausible
+            QVERIFY(std::isnan(back->cloud->xyz[3]));
+            QCOMPARE(back->cloud->xyz[1], 2.0f);
         }
     }
 
