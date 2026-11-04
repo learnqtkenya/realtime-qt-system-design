@@ -167,22 +167,46 @@ QSGNode *TrackOverlay::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
     fill->markDirty(QSGNode::DirtyGeometry);
     selectedOutline->markDirty(QSGNode::DirtyGeometry);
 
+    const qint64 tl = qp::nowNs();
     labels->clear();
     selectedLabel->clear();
     QFont font;
     font.setPixelSize(10);
     const bool all = int(rows.size()) <= m_labelLimit;
+    // All labels in one layout, a line each, placed where its object is: one layout's set-up costs
+    // more than shaping ten characters (results/step-11).
+    QString text;
+    std::vector<QPointF> at;
     for (const qp::Track &t : rows) {
-        const bool isSelected = int(t.id) == m_selectedId;
-        if (!all && !isSelected)
-            continue;
-        QFont f = font;
-        f.setBold(isSelected);
-        QTextLayout layout(QStringLiteral("#%1  %2 m/s").arg(t.id).arg(t.speed, 0, 'f', 1), f);
+        const QPointF pos(cx + t.x * s + 8, cy - t.y * s - 20);
+        const QString label = QStringLiteral("#%1  %2 m/s").arg(t.id).arg(t.speed, 0, 'f', 1);
+        if (int(t.id) == m_selectedId) {
+            QFont bold = font;
+            bold.setBold(true);
+            QTextLayout layout(label, bold);
+            layout.beginLayout();
+            layout.createLine();
+            layout.endLayout();
+            selectedLabel->addTextLayout(pos, &layout);
+        } else if (all) {
+            if (!text.isEmpty())
+                text += QChar::LineSeparator;
+            text += label;
+            at.push_back(pos);
+        }
+    }
+    if (!at.empty()) {
+        QTextLayout layout(text, font);
         layout.beginLayout();
-        layout.createLine();
+        for (const QPointF &pos : at) {
+            QTextLine line = layout.createLine();
+            if (!line.isValid())
+                break;
+            line.setLineWidth(1e6);
+            line.setPosition(pos);
+        }
         layout.endLayout();
-        (isSelected ? selectedLabel : labels)->addTextLayout(QPointF(cx + t.x * s + 8, cy - t.y * s - 20), &layout);
+        labels->addTextLayout(QPointF(0, 0), &layout);
     }
     // Operator notes from the last 5 s of scene time, where they were made.
     if (m_tracks && m_tracks->store()) {
@@ -200,6 +224,7 @@ QSGNode *TrackOverlay::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
             selectedLabel->addTextLayout(QPointF(cx + n.x * s - 4, cy - n.y * s + 6), &layout);
         }
     }
+    qp::StageStats::instance().add(QStringLiteral("overlay_labels_ms"), double(qp::nowNs() - tl) / 1e6);
     qp::StageStats::instance().add(QStringLiteral("overlay_sync_ms"), double(qp::nowNs() - t0) / 1e6);
     return root;
 }

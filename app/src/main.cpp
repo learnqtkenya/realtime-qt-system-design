@@ -39,6 +39,10 @@
 #include <QSocketNotifier>
 
 #include <csignal>
+#ifdef Q_OS_WASM
+#include <emscripten.h>
+#include <emscripten/heap.h>
+#endif
 #include <memory>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -47,9 +51,16 @@ namespace {
 
 int g_signalPipe[2] = {-1, -1};
 
-// What this process may use: physical memory, or less if its cgroup (or a parent's) says so.
+// What this process may use: physical memory, or less if its cgroup (or a parent's) says so. A page
+// can't see the machine: the smaller of what the browser admits to (Chrome's navigator.deviceMemory,
+// coarse; Firefox says nothing) and the WebAssembly address space (4 GB).
 qint64 memoryAvailableToProcess()
 {
+#ifdef Q_OS_WASM
+    const double device = EM_ASM_DOUBLE({ return (typeof navigator !== 'undefined' && navigator.deviceMemory || 0) * 1073741824; });
+    const auto space = qint64(emscripten_get_heap_max());
+    return device > 0 ? std::min(qint64(device), space) : space;
+#endif
     qint64 limit = 0;
     QFile meminfo(QStringLiteral("/proc/meminfo"));
     if (meminfo.open(QIODevice::ReadOnly))
@@ -125,6 +136,7 @@ int main(int argc, char *argv[])
     if (!opts->parse(app.arguments()))
         return 2;
     auto given = [opts](const char *key) { return opts->extra(QString::fromLatin1(key)).isValid(); };
+    qp::g_clockOffsetNs = qint64(opts->extra(QStringLiteral("clockOffsetMs"), 0).toDouble() * 1e6);
 
     // Step 9: an installed viewer reads from share/qtqmlpro and writes where the user may write; a
     // build-tree viewer keeps everything next to itself.
@@ -297,7 +309,8 @@ int main(int argc, char *argv[])
     health.start();
 
     // Step 7: --set serve=<port> shares the live streams; --set connect=<host>:<port> (with --no-sim)
-    // shows another viewer's.
+    // shows another viewer's. Step 11: --set serveWs=<port> also serves them to browsers, and
+    // connect takes a ws:// URL.
     std::unique_ptr<StreamServer> server;
     std::unique_ptr<StreamClient> client;
     const int servePort = opts->extra(QStringLiteral("serve"), 0).toInt();
@@ -316,6 +329,10 @@ int main(int argc, char *argv[])
             opts->extra(QStringLiteral("wireZstd"), 1).toInt(), info,
             qint64(opts->extra(QStringLiteral("highWaterKb"), 1024).toInt()) * 1024,
             opts->extra(QStringLiteral("sendBufferKb"), 0).toInt() * 1024);
+        if (const int kb = opts->extra(QStringLiteral("creditWindowKb"), 0).toInt(); kb > 0)
+            server->setCreditWindow(qint64(kb) * 1024);
+        if (const int wsPort = opts->extra(QStringLiteral("serveWs"), 0).toInt(); wsPort > 0)
+            server->setWebSocket(quint16(wsPort), opts->extra(QStringLiteral("wsOrigins")).toString().split(u',', Qt::SkipEmptyParts));
         QString error;
         if (!server->start(&error)) {
             QTextStream(stderr) << "--set serve=" << servePort << ": " << error << "\n";
@@ -324,14 +341,16 @@ int main(int argc, char *argv[])
         timeline.setPublisher(server.get());
     }
     if (!connectTo.isEmpty()) {
+        const bool url = connectTo.contains(QLatin1String("://"));
         const QStringList hp = connectTo.split(u':');
         client = std::make_unique<StreamClient>(
-            hp.value(0), quint16(hp.value(1).toInt()), opts->extra(QStringLiteral("readMbps"), 0).toDouble(),
+            url ? connectTo : hp.value(0), url ? quint16(0) : quint16(hp.value(1).toInt()), opts->extra(QStringLiteral("readMbps"), 0).toDouble(),
             opts->extra(QStringLiteral("receiveBufferKb"), 0).toInt() * 1024,
             StreamClient::Sinks{[&timeline](const qp::SensorFrame &f) { timeline.ingestLidar(f); },
                                 [&timeline](const qp::TrackSetPtr &t) { timeline.ingestTracks(t); },
                                 [&timeline](const qp::EventBatchPtr &b) { timeline.ingestEvents(b); },
                                 [&health] { health.resetSequences(); }});
+        client->setRecordDelayMs(opts->extra(QStringLiteral("clientDelayMs"), 0).toInt());
         client->start();
     }
     QTimer networkTick;
@@ -474,7 +493,8 @@ int main(int argc, char *argv[])
     layout.track(&lab, "lodEnabled", QStringLiteral("lod"), given("lod"));
     layout.track(&timeline, "delayMs", QStringLiteral("delayMs"), given("delayMs"));
     engine.loadFromModule("Viewer", "Main");
-    diagnostics.setStartup(QStringLiteral("qmlLoadedMs"), Diagnostics::msSinceProcessStart());
+    const double qmlLoadedMs = Diagnostics::msSinceProcessStart();
+    diagnostics.setStartup(QStringLiteral("qmlLoadedMs"), qmlLoadedMs);
     plugins.start();
     layout.track(&plugins, "enabledLayers", QStringLiteral("layers"), given("layers"));
     // Started after the window exists, so the panels have their sinks.
@@ -538,8 +558,17 @@ int main(int argc, char *argv[])
         layout.track(window, "width", QStringLiteral("windowWidth"), opts->bench());
         layout.track(window, "height", QStringLiteral("windowHeight"), opts->bench());
         auto first = std::make_shared<QMetaObject::Connection>();
-        *first = QObject::connect(window, &QQuickWindow::frameSwapped, &diagnostics, [&diagnostics, first] {
-            diagnostics.setStartup(QStringLiteral("firstFrameMs"), Diagnostics::msSinceProcessStart());
+        *first = QObject::connect(window, &QQuickWindow::frameSwapped, &diagnostics, [&diagnostics, first, startedMainMs, qmlLoadedMs] {
+            const double firstFrameMs = Diagnostics::msSinceProcessStart();
+            diagnostics.setStartup(QStringLiteral("firstFrameMs"), firstFrameMs);
+#ifdef Q_OS_WASM
+            // A page's log is its console; the harness reads it there.
+            QTextStream(stdout) << QStringLiteral("startup: main %1 ms, qml %2 ms, first frame %3 ms\n")
+                                       .arg(startedMainMs, 0, 'f', 0).arg(qmlLoadedMs, 0, 'f', 0).arg(firstFrameMs, 0, 'f', 0);
+#else
+            Q_UNUSED(startedMainMs);
+            Q_UNUSED(qmlLoadedMs);
+#endif
             QObject::disconnect(*first);
         });
     }

@@ -47,6 +47,47 @@ QByteArray record(rec::Type type, quint16 version, int stream, qint64 t, const Q
     return out;
 }
 
+QByteArray clockRecord(qint64 clientNs, qint64 serverNs)
+{
+    QByteArray payload;
+    rec::ByteWriter w(payload);
+    w.put<qint64>(clientNs);
+    w.put<qint64>(serverNs);
+    return record(rec::Type::Clock, 1, 0, clientNs, payload);
+}
+
+QByteArray creditRecord(qint64 consumedBytes)
+{
+    QByteArray payload;
+    rec::ByteWriter w(payload);
+    w.put<qint64>(consumedBytes);
+    return record(rec::Type::Credit, 1, 0, 0, payload);
+}
+
+void ClockSync::seed(qint64 serverNs, qint64 localNs)
+{
+    if (m_count > 0)
+        return;
+    m_offset = serverNs - localNs;
+    m_known = true;
+}
+
+void ClockSync::add(qint64 sentNs, qint64 serverNs, qint64 receivedNs)
+{
+    const qint64 rtt = receivedNs - sentNs;
+    if (rtt < 0)
+        return;
+    m_samples[m_count % kWindow] = {serverNs - (sentNs + rtt / 2), rtt};
+    ++m_count;
+    const Sample *best = &m_samples[0];
+    for (int i = 1; i < std::min(m_count, kWindow); ++i)
+        if (m_samples[i].rtt < best->rtt)
+            best = &m_samples[i];
+    m_offset = best->offset;
+    m_rtt = best->rtt;
+    m_known = true;
+}
+
 QByteArray lidarRecord(const qp::SensorFrame &frame, int zstdLevel)
 {
     const QByteArray raw = rec::encodeLidar(frame, rec::LidarEncoding::Int16Planar);
@@ -131,6 +172,18 @@ bool Parser::decode(const char *p, const std::function<void(const Decoded &)> &o
             ok = payloadSize >= 4;
             if (ok)
                 d.selection = load<qint32>(payload);
+            break;
+        case rec::Type::Credit:
+            ok = payloadSize >= 8;
+            if (ok)
+                d.credit = load<qint64>(payload);
+            break;
+        case rec::Type::Clock:
+            ok = payloadSize >= 16;
+            if (ok) {
+                d.clockClientNs = load<qint64>(payload);
+                d.clockServerNs = load<qint64>(payload + 8);
+            }
             break;
         default: ok = false; break;
         }

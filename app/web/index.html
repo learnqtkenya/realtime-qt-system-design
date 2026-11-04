@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, user-scalable=0">
+  <title>Viewer</title>
+  <style>
+    html, body { padding: 0; margin: 0; overflow: hidden; height: 100%; background: #101418; color: #c8d0d8;
+                 font: 14px system-ui, sans-serif; }
+    #screen { width: 100%; height: 100%; }
+    #status { position: absolute; top: 45%; width: 100%; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="status">Loading…</div>
+  <div id="screen"></div>
+  <script>
+    // The viewer's command line comes from the page address: ?a=--no-sim&a=--set&a=connect=ws://…
+    // Console output also goes to the serving script (/log), when it offers one.
+    const params = new URLSearchParams(location.search);
+    const args = params.getAll('a');
+    const session = params.get('session') || '';
+    const started = performance.now();
+    const pending = [];
+    const log = (stream, text) => {
+      (stream === 'err' ? console.warn : console.log)(text);
+      pending.push(`${(performance.now() - started).toFixed(0)} ${stream} ${text}`);
+    };
+    setInterval(() => {
+      if (pending.length && session)
+        fetch(`/log/${session}`, { method: 'POST', body: pending.splice(0).join('\n') + '\n' }).catch(() => {});
+    }, 500);
+    window.addEventListener('error', e => log('err', `page error: ${e.message}\n${e.error && e.error.stack || ''}`));
+  </script>
+  <script src="viewer.js"></script>
+  <script src="qtloader.js"></script>
+  <script>
+    (async () => {
+      const status = document.querySelector('#status');
+      const screen = document.querySelector('#screen');
+      if (!crossOriginIsolated) {
+        status.textContent = 'This page needs cross-origin isolation (COOP/COEP headers) for threads.';
+        log('err', 'not cross-origin isolated');
+        return;
+      }
+      try {
+        await qtLoad({
+          arguments: args,
+          print: t => log('out', t),
+          printErr: t => log('err', t),
+          qt: {
+            onLoaded: () => {
+              status.style.display = 'none';
+              log('out', `page: loaded in ${(performance.now() - started).toFixed(0)} ms`);
+            },
+            onExit: e => {
+              status.style.display = 'block';
+              status.textContent = `Stopped${e.code !== undefined ? ` (exit ${e.code})` : ''}${e.text ? `: ${e.text}` : ''}`;
+              log(e.crashed ? 'err' : 'out', `page: exit ${e.code} ${e.text || ''} crashed=${!!e.crashed}`);
+            },
+            entryFunction: window.viewer_entry,
+            containerElements: [screen],
+            preload: ['preload.json'],
+          },
+        });
+      } catch (e) {
+        status.textContent = `Failed to start: ${e}`;
+        log('err', `page: failed to start: ${e}`);
+      }
+    })();
+  </script>
+</body>
+</html>

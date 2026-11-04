@@ -44,7 +44,7 @@ Rectangle {
             text: `latency  mean ${root.fmt(root.monitor.latencyMsMean, 0)}  max ${root.fmt(root.monitor.latencyMsMax, 0)} ms`
         }
         Line {
-            text: `cpu      gui ${root.fmt(root.monitor.guiCpuPercent, 0)}%  proc ${root.fmt(root.monitor.processCpuPercent, 0)}%`
+            text: root.monitor.guiCpuPercent < 0 ? "cpu      n/a" : `cpu      gui ${root.fmt(root.monitor.guiCpuPercent, 0)}%  proc ${root.fmt(root.monitor.processCpuPercent, 0)}%`
         }
         Line {
             text: `rss      ${root.fmt(root.monitor.rssMb, 0)} MB`

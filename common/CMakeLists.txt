@@ -36,6 +36,7 @@ target_link_libraries(qtqmlpro_common PRIVATE Qt6::GuiPrivate)
 target_compile_options(qtqmlpro_common PUBLIC -Wall -Wextra)
 
 # ---- tests -----------------------------------------------------------------
+if(NOT EMSCRIPTEN)
 find_package(Qt6 REQUIRED COMPONENTS Test)
 
 qt_add_executable(tst_runningsamples tests/tst_runningsamples.cpp)
@@ -45,3 +46,4 @@ add_test(NAME runningsamples COMMAND tst_runningsamples)
 qt_add_executable(tst_simulator tests/tst_simulator.cpp)
 target_link_libraries(tst_simulator PRIVATE qtqmlpro_common Qt6::Test)
 add_test(NAME simulator COMMAND tst_simulator)
+endif()

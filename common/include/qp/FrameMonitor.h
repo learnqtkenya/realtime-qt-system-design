@@ -3,6 +3,7 @@
 #include "qp/RunningSamples.h"
 
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QObject>
 #include <QPointer>
 #include <QQmlEngine>
@@ -169,6 +170,7 @@ private:
     int64_t m_benchStartNs = 0;
     std::atomic<bool> m_reportWritten{false};
     QList<double> m_benchFpsSeries, m_benchFrameP99Series, m_benchLagP99Series; // guarded by m_mutex
+    QJsonArray m_benchRssSeries, m_benchLatencySeries; // [seconds into the run, value]; guarded by m_mutex
     void writeReport(const QJsonObject &report);
 };
 

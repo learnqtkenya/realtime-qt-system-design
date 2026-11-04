@@ -1,7 +1,9 @@
 #include "Plugins.h"
 
 #include "FrameStore.h"
+#ifndef Q_OS_WASM
 #include "ProcessLayer.h"
+#endif
 #include "ScriptLayer.h"
 #include "Selection.h"
 #include "Wire.h"
@@ -212,6 +214,10 @@ void PluginHost::scan()
                 why = QStringLiteral("another plugin has the id %1").arg(m.id);
             if (why.isEmpty() && (m.apiMajor != kApiMajor || m.apiMinor > kApiMinor))
                 why = QStringLiteral("needs API %1; this viewer offers %2").arg(m.api(), api());
+#ifdef Q_OS_WASM
+            if (why.isEmpty() && m.kind == u"process")
+                why = QStringLiteral("process plugins can't run in a browser");
+#endif
             seen.insert(m.id);
             std::unique_ptr<Layer> layer;
             if (!why.isEmpty())
@@ -220,8 +226,10 @@ void PluginHost::scan()
                 layer = std::make_unique<ItemLayer>(m, this);
             else if (m.kind == u"script")
                 layer = std::make_unique<ScriptLayer>(m, this);
+#ifndef Q_OS_WASM
             else
                 layer = std::make_unique<ProcessLayer>(m, this);
+#endif
             if (!why.isEmpty())
                 layer->start();
             m_enabled[layer.get()] = false;

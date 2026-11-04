@@ -28,6 +28,11 @@ public:
                  int sendBuffer = 0, QObject *parent = nullptr);
     ~StreamServer() override;
 
+    // Before start(): also serve the same records over WebSockets (browsers can't open TCP sockets).
+    // Origins are accepted when local (localhost, 127.0.0.1, none) or listed.
+    void setWebSocket(quint16 port, const QStringList &origins);
+    // Before start(): what a client with credit may have unprocessed (default 4 MB).
+    void setCreditWindow(qint64 bytes);
     bool start(QString *error);
 
     // Any thread.
@@ -43,12 +48,14 @@ private:
     QThread m_thread;
     Worker *m_worker = nullptr;
     quint16 m_port;
+    quint16 m_wsPort = 0;
+    QStringList m_wsOrigins;
     mutable std::mutex m_mutex;
     QStringList m_status;
     friend class Worker;
 };
 
-// Connects to a StreamServer and hands what arrives to the sinks, on its own thread.
+// Connects to a StreamServer (host:port over TCP, or a ws:// URL) and hands what arrives to the sinks, on its own thread.
 class StreamClient : public QObject
 {
     Q_OBJECT
@@ -63,10 +70,13 @@ public:
     };
     // readMbps > 0: read no faster than this (a slow link or a slow machine).
     // receiveBuffer: the kernel's receive buffer (0: the system's choice).
+    // host may be a ws:// URL (port is then ignored); readMbps and receiveBuffer apply to TCP only.
     StreamClient(const QString &host, quint16 port, double readMbps, int receiveBuffer, Sinks sinks,
                  QObject *parent = nullptr);
     ~StreamClient() override;
 
+    // Before start(): spend this long on every lidar record (a slow device; fault injection).
+    void setRecordDelayMs(int ms) { m_recordDelayMs = ms; }
     void start();
     QString status() const;
 
@@ -74,6 +84,7 @@ private:
     class Worker;
     QThread m_thread;
     Worker *m_worker = nullptr;
+    int m_recordDelayMs = 0;
     mutable std::mutex m_mutex;
     QString m_status;
     friend class Worker;

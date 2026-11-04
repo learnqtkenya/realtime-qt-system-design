@@ -1,0 +1,17 @@
+Layout across a page reload (Firefox, one session). Click "3D orbit", wait 3 s (save debounce 1 s), reload.
+The stored value is read from the page's localStorage with WebDriver.
+
+as built (file in the page's in-memory filesystem; build without the localStorage mirror):
+asbuilt2 stored view at start: None
+asbuilt2 stored view after click: None
+asbuilt2 stored view after reload: None
+  screenshot: after reload the view is back to top-down
+
+localStorage mirror:
+fixed2 stored view at start: top
+fixed2 stored view after click: orbit
+fixed2 stored view after reload: orbit
+  screenshot: after reload the 3D orbit view is restored
+
+Images: results/step-11/layout-reload.png (top row as built, bottom row fixed; left after the click, right after reload).
+Note: WebDriver key events did not reach Qt (F2 had no effect), pointer events did; the first attempt with F2 was discarded.

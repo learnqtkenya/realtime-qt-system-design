@@ -1,7 +1,32 @@
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET libzstd)
-find_package(ZLIB REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Network)
+if(EMSCRIPTEN)
+    # The WASM kit has neither; zstd is built from the release the desktop uses, zlib is Emscripten's port.
+    include(FetchContent)
+    set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+    set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+    set(ZSTD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(ZSTD_MULTITHREAD_SUPPORT OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(zstd
+        URL https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
+        URL_HASH SHA256=eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3
+        SOURCE_SUBDIR build/cmake
+        EXCLUDE_FROM_ALL)
+    FetchContent_MakeAvailable(zstd)
+    add_library(qp_zstd INTERFACE)
+    target_include_directories(qp_zstd INTERFACE ${zstd_SOURCE_DIR}/lib)
+    target_link_libraries(qp_zstd INTERFACE libzstd_static)
+    add_library(qp_zlib INTERFACE)
+    target_compile_options(qp_zlib INTERFACE -sUSE_ZLIB=1)
+    target_link_options(qp_zlib INTERFACE -sUSE_ZLIB=1)
+    set(QP_ZSTD qp_zstd)
+    set(QP_ZLIB qp_zlib)
+else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET libzstd)
+    find_package(ZLIB REQUIRED)
+    set(QP_ZSTD PkgConfig::ZSTD)
+    set(QP_ZLIB ZLIB::ZLIB)
+endif()
+find_package(Qt6 REQUIRED COMPONENTS Network WebSockets)
 
 set(VIEWER_SOURCES
     src/Codec.h src/Codec.cpp
@@ -19,7 +44,6 @@ set(VIEWER_SOURCES
     src/Overlay.h src/Overlay.cpp
     src/Plugins.h src/Plugins.cpp
     src/ScriptLayer.h src/ScriptLayer.cpp
-    src/ProcessLayer.h src/ProcessLayer.cpp
     src/LayerOverlay.h src/LayerOverlay.cpp
     src/Diagnostics.h src/Diagnostics.cpp
     src/LayoutStore.h src/LayoutStore.cpp
@@ -44,6 +68,10 @@ set(VIEWER_SOURCES
     src/InputRobot.h src/InputRobot.cpp
     src/TrackListModel.h src/TrackListModel.cpp
 )
+
+if(NOT EMSCRIPTEN) # a browser can't start processes
+    list(APPEND VIEWER_SOURCES src/ProcessLayer.h src/ProcessLayer.cpp)
+endif()
 
 qt_add_executable(viewer src/main.cpp)
 add_custom_target(viewer_version
@@ -86,7 +114,7 @@ target_include_directories(viewer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # QRhi has limited compatibility guarantees across Qt versions.
 target_link_libraries(viewer PRIVATE
     qtqmlpro_common qtqmlpro_commonplugin
-    Qt6::Quick3D Qt6::QuickControls2 Qt6::Multimedia Qt6::GuiPrivate Qt6::Network PkgConfig::ZSTD ZLIB::ZLIB)
+    Qt6::Quick3D Qt6::QuickControls2 Qt6::Multimedia Qt6::GuiPrivate Qt6::Network Qt6::WebSockets ${QP_ZSTD} ${QP_ZLIB})
 
 # Plugins live next to the viewer in the build (and in a package): build/<preset>/plugins.
 add_custom_target(viewer_plugins ALL
@@ -95,6 +123,29 @@ add_custom_target(viewer_plugins ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/plugins/sdk ${CMAKE_BINARY_DIR}/plugins-lab/sdk
     COMMENT "Copying plugins")
 add_dependencies(viewer viewer_plugins)
+if(EMSCRIPTEN)
+    # Threads are Web Workers made ahead of time; more threads than this start only once the main
+    # thread yields to the browser. Qt's default is 4; the viewer starts 10 (results/step-11).
+    set(QP_WASM_POOL 4 CACHE STRING "Web Workers created before main() runs")
+    set_target_properties(viewer PROPERTIES QT_WASM_PTHREAD_POOL_SIZE ${QP_WASM_POOL})
+    option(QP_WASM_ASSERTIONS "Emscripten runtime assertions (diagnosis only; never measure with this)" OFF)
+    if(QP_WASM_ASSERTIONS)
+        target_link_options(viewer PRIVATE -sASSERTIONS=2 --profiling-funcs)
+    endif()
+    # The page, and the plugins' manifests and scripts copied into the page's in-memory filesystem
+    # at /plugins (the viewer's directory is / in a browser). Served from build/wasm.
+    configure_file(web/index.html ${CMAKE_CURRENT_BINARY_DIR}/index.html COPYONLY)
+    file(GLOB_RECURSE plugin_files RELATIVE ${CMAKE_SOURCE_DIR}/plugins CONFIGURE_DEPENDS
+         ${CMAKE_SOURCE_DIR}/plugins/*/plugin.json ${CMAKE_SOURCE_DIR}/plugins/*/*.mjs ${CMAKE_SOURCE_DIR}/plugins/*/*.qml)
+    set(preload "")
+    foreach(f IN LISTS plugin_files)
+        string(APPEND preload "  {\"source\": \"../plugins/${f}\", \"destination\": \"/plugins/${f}\"},\n")
+    endforeach()
+    string(REGEX REPLACE ",\n$" "\n" preload "${preload}")
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/preload.json "[\n${preload}]\n")
+endif()
+
+if(NOT EMSCRIPTEN)
 # A process plugin in C++ with no Qt: the protocol is the API.
 add_executable(speed-vectors-layer ${CMAKE_SOURCE_DIR}/plugins/speed-vectors-cpp/main.cpp)
 target_include_directories(speed-vectors-layer PRIVATE ${CMAKE_SOURCE_DIR}/plugins/sdk/cpp)
@@ -146,7 +197,7 @@ qt_add_executable(tst_wire tests/tst_wire.cpp
     src/StreamServer.h src/StreamServer.cpp src/Wire.h src/Wire.cpp src/Overlay.h src/Overlay.cpp
     src/Codec.h src/Codec.cpp src/Recording.h src/Recording.cpp)
 target_include_directories(tst_wire PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(tst_wire PRIVATE qtqmlpro_common Qt6::Test Qt6::Network Qt6::Qml PkgConfig::ZSTD ZLIB::ZLIB)
+target_link_libraries(tst_wire PRIVATE qtqmlpro_common Qt6::Test Qt6::Network Qt6::WebSockets Qt6::Qml PkgConfig::ZSTD ZLIB::ZLIB)
 add_test(NAME wire COMMAND tst_wire)
 
 qt_add_executable(tst_plugins tests/tst_plugins.cpp
@@ -185,3 +236,4 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/plugins-lab/ DESTINATION ${CMAKE_INSTALL_D
 install(FILES ${CMAKE_BINARY_DIR}/media/cam0.mp4 ${CMAKE_BINARY_DIR}/media/cam1.mp4 ${CMAKE_BINARY_DIR}/media/cam2.mp4
               ${CMAKE_BINARY_DIR}/media/cam3.mp4
         DESTINATION ${CMAKE_INSTALL_DATADIR}/qtqmlpro/media OPTIONAL)
+endif()

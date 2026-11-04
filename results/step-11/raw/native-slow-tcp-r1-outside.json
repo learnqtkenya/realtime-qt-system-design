@@ -1,0 +1,703 @@
+{
+ "marks": {},
+ "series": [
+  {
+   "t": 0.0003542900085449219,
+   "server": [],
+   "backlogMb": null,
+   "replaced": null,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 1.0141804218292236,
+   "server": [],
+   "backlogMb": null,
+   "replaced": null,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 2.0211873054504395,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 18.6 MB/s \u00b7 backlog 1.1 MB \u00b7 0 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 0,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 3.027340888977051,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 25 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 25,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 4.034748554229736,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 53 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 53,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 5.042965650558472,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 79 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 79,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 6.049280405044556,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 131 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 131,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 7.056230545043945,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 156 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 156,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 8.062389135360718,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 183 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 183,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 9.069332122802734,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 210 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 210,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 10.075891494750977,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 210 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 210,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 11.08128571510315,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 235 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 235,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 12.087458610534668,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 260 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 260,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 13.095925569534302,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 316 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 316,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 14.102559328079224,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 342 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 342,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 15.10901141166687,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 370 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 370,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 16.115896940231323,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 395 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 395,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 17.122236490249634,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 420 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 420,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 18.12856149673462,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 420 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 420,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 19.13504672050476,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 447 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 447,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 20.140487670898438,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 472 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 472,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 21.147218942642212,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 524 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 524,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 22.152942895889282,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 524 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 524,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 23.15928626060486,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 580 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 580,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 24.166216611862183,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 608 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 608,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 25.17314863204956,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 608 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 608,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 26.17912769317627,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 659 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 659,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 27.185513257980347,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 659 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 659,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 28.192951440811157,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 688 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 688,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 29.199287176132202,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 745 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 745,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 30.20614790916443,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 745 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 745,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 31.212689638137817,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 799 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 799,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 32.21990752220154,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 799 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 799,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 33.2253999710083,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 823 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 823,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 34.231186866760254,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 873 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 873,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 35.23726797103882,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 900 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 900,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 36.244407415390015,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 928 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 928,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 37.25137734413147,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 928 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 928,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 38.25655436515808,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 954 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 954,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 39.26306676864624,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 978 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 978,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 40.2706241607666,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1031 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1031,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 41.27691340446472,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 1056 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1056,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 42.283989667892456,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 1056 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1056,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 43.29032254219055,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1109 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1109,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 44.29774475097656,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1135 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1135,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 45.30494403839111,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1164 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1164,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 46.311139822006226,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1193 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1193,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 47.317463874816895,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1221 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1221,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 48.32537126541138,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1221 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1221,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 49.33067059516907,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1274 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1274,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 50.33623266220093,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1274 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1274,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 51.342973947525024,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1328 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1328,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 52.34973478317261,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1328 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1328,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 53.355990409851074,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1353 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1353,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 54.361950159072876,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1381 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1381,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 55.369757413864136,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1409 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1409,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 56.375272274017334,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1460 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1460,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 57.382378578186035,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1460 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1460,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 58.38773727416992,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1484 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1484,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 59.39494276046753,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1506 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1506,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 60.40189027786255,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1555 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1555,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 61.407925605773926,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1555 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1555,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 62.41452884674072,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1606 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1606,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 63.4213433265686,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1606 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1606,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 64.42780566215515,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 1630 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1630,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 65.4337990283966,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1682 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1682,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 66.44119453430176,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1682 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1682,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 67.44784116744995,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1708 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1708,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 68.45436906814575,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1759 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1759,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 69.46158957481384,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 1784 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1784,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 70.46836733818054,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 1784 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1784,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 71.47483277320862,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1812 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1812,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 72.4811441898346,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1840 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1840,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 73.48703742027283,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1894 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1894,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 74.49416828155518,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1894 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1894,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 75.5005669593811,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 11.0 MB/s \u00b7 backlog 1.1 MB \u00b7 1922 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1922,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 76.50711798667908,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 9.9 MB/s \u00b7 backlog 1.1 MB \u00b7 1949 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1949,
+   "firefoxRssMb": {}
+  },
+  {
+   "t": 77.51373529434204,
+   "server": [
+    "::ffff:127.0.0.1:56272 \u00b7 10.4 MB/s \u00b7 backlog 1.1 MB \u00b7 1978 replaced \u00b7 0 events dropped"
+   ],
+   "backlogMb": 1.1,
+   "replaced": 1978,
+   "firefoxRssMb": {}
+  }
+ ]
+}

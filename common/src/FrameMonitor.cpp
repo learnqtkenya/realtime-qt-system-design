@@ -20,6 +20,10 @@
 
 #include <rhi/qrhi.h>
 
+#ifdef Q_OS_WASM
+#include <emscripten.h>
+#include <emscripten/heap.h>
+#endif
 #include <pthread.h>
 #include <sys/resource.h>
 #include <time.h>
@@ -36,6 +40,13 @@ namespace qp {
 namespace {
 
 constexpr double kBudgetMs = 1000.0 / 60.0;
+// The lag probe's period. Browsers clamp repeating timers to 4 ms, so a 2 ms probe would read 2 ms
+// of lag on an idle page.
+#ifdef Q_OS_WASM
+constexpr int kLagTickMs = 4;
+#else
+constexpr int kLagTickMs = 2;
+#endif
 
 std::atomic<qint64> g_pendingCaptureNs[2];    // shown by the next swap
 std::atomic<qint64> g_pendingGuiCaptureNs[2]; // enters the scene graph at the next sync
@@ -74,6 +85,9 @@ double processCpuSeconds()
 
 double rssMegabytes()
 {
+#ifdef Q_OS_WASM
+    return double(emscripten_get_heap_size()) / (1024.0 * 1024.0); // the module's memory: grows, never shrinks
+#endif
     QFile f(QStringLiteral("/proc/self/statm"));
     if (!f.open(QIODevice::ReadOnly))
         return 0;
@@ -120,7 +134,7 @@ void FrameMonitor::Series::clear()
 FrameMonitor::FrameMonitor(QObject *parent) : QObject(parent)
 {
     m_lagTimer.setTimerType(Qt::PreciseTimer);
-    m_lagTimer.setInterval(2);
+    m_lagTimer.setInterval(kLagTickMs);
     connect(&m_lagTimer, &QTimer::timeout, this, &FrameMonitor::onLagTick);
 
     m_secondTimer.setTimerType(Qt::CoarseTimer);
@@ -357,7 +371,7 @@ void FrameMonitor::reportDisplayed(qint64 captureNs)
 void FrameMonitor::onLagTick()
 {
     const int64_t now = nowNs();
-    const double lateMs = std::max(0.0, double(now - m_prevLagTickNs) / 1e6 - 2.0);
+    const double lateMs = std::max(0.0, double(now - m_prevLagTickNs) / 1e6 - kLagTickMs);
     m_prevLagTickNs = now;
     m_lastLagTickNs.store(now);
     std::lock_guard lk(m_mutex);
@@ -378,8 +392,12 @@ void FrameMonitor::samplerMain()
         const double wall = double(now - prevNs) / 1e9;
         const double gui = clockSeconds(m_guiCpuClock);
         const double proc = processCpuSeconds();
+#ifdef Q_OS_WASM
+        const double guiPct = -1, procPct = -1; // a page can't see CPU time
+#else
         const double guiPct = (gui - prevGui) / wall * 100.0;
         const double procPct = (proc - prevProc) / wall * 100.0;
+#endif
         const double rss = rssMegabytes();
         prevNs = now;
         prevGui = gui;
@@ -391,8 +409,11 @@ void FrameMonitor::samplerMain()
 
         std::lock_guard sl(m_mutex);
         if (m_benchActive) {
-            m_bench.guiCpuPct.add(guiPct);
-            m_bench.procCpuPct.add(procPct);
+            m_benchRssSeries.append(QJsonArray{double(now - m_benchStartNs) / 1e9, rss});
+            if (guiPct >= 0) {
+                m_bench.guiCpuPct.add(guiPct);
+                m_bench.procCpuPct.add(procPct);
+            }
             m_bench.rssMb.add(rss);
         }
     }
@@ -429,6 +450,8 @@ void FrameMonitor::onSecondTick()
             m_benchFpsSeries.append(s.fps);
             m_benchFrameP99Series.append(s.frameP99);
             m_benchLagP99Series.append(s.lagP99);
+            // Timestamped: a hidden page runs this timer rarely, and the gaps are the finding.
+            m_benchLatencySeries.append(QJsonArray{double(now - m_benchStartNs) / 1e9, s.latMean});
         }
         m_cur.clear();
         m_curFrames = 0;
@@ -478,6 +501,8 @@ void FrameMonitor::watchdogMain(double warmupSec, double durationSec)
         m_benchFpsSeries.clear();
         m_benchFrameP99Series.clear();
         m_benchLagP99Series.clear();
+        m_benchRssSeries = {};
+        m_benchLatencySeries = {};
         m_benchActive = true;
         m_benchStartNs = nowNs();
     }
@@ -489,6 +514,9 @@ void FrameMonitor::watchdogMain(double warmupSec, double durationSec)
     const double measured = double(nowNs() - m_benchStartNs) / 1e9;
     writeReport(buildReport(measured));
 
+#ifdef Q_OS_WASM
+    return; // a page can't quit: without Asyncify Qt treats exit() as fatal. The harness closes the tab.
+#endif
     QMetaObject::invokeMethod(qApp, &QCoreApplication::quit, Qt::QueuedConnection);
 
     if (m_wdCv.wait_for(lk, seconds(8), stopped))
@@ -501,6 +529,27 @@ void FrameMonitor::writeReport(const QJsonObject &report)
 {
     if (m_reportWritten.exchange(true))
         return;
+#ifdef Q_OS_WASM
+    // A page can't write a file anyone else reads: --out is a URL the report is PUT to. Called on a
+    // worker thread, where a synchronous request is allowed.
+    if (m_benchOut.startsWith(u"http")) {
+        const QByteArray url = m_benchOut.toUtf8();
+        const QByteArray body = QJsonDocument(report).toJson(QJsonDocument::Indented);
+        const int status = EM_ASM_INT({
+            try {
+                const x = new XMLHttpRequest();
+                x.open('PUT', UTF8ToString($0), false);
+                x.send(HEAPU8.slice($1, $1 + $2));
+                return x.status;
+            } catch (e) {
+                return -1;
+            }
+        }, url.constData(), body.constData(), int(body.size()));
+        if (status < 200 || status >= 300)
+            qCWarning(lcFrameMonitor) << "cannot send report to" << m_benchOut << "status" << status;
+        return;
+    }
+#endif
     QDir().mkpath(QFileInfo(m_benchOut).absolutePath());
     QFile f(m_benchOut);
     if (f.open(QIODevice::WriteOnly | QIODevice::Truncate))
@@ -572,6 +621,8 @@ QJsonObject FrameMonitor::buildReport(double measuredSec)
     r["fpsSeries"] = QJsonArray::fromVariantList(QVariantList(m_benchFpsSeries.begin(), m_benchFpsSeries.end()));
     r["frameP99Series"] = QJsonArray::fromVariantList(QVariantList(m_benchFrameP99Series.begin(), m_benchFrameP99Series.end()));
     r["lagP99Series"] = QJsonArray::fromVariantList(QVariantList(m_benchLagP99Series.begin(), m_benchLagP99Series.end()));
+    r["rssSeries"] = m_benchRssSeries;
+    r["latencySeries"] = m_benchLatencySeries;
     r["rssGrowthMbPerMinute"] = slope * 60.0;
 
     const int64_t lastSwap = m_lastSwapNs.load();

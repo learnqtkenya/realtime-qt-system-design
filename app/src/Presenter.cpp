@@ -164,7 +164,9 @@ void Presenter::deliver(const Sample &s, qint64 T, qint64 stampNs, qint64 now, b
         break;
     case rec::Type::Gap:
     case rec::Type::Overlay:
-    case rec::Type::Selection: break;
+    case rec::Type::Selection:
+    case rec::Type::Clock:
+    case rec::Type::Credit: break;
     }
 }
 

@@ -9,7 +9,51 @@
 #include <QMetaProperty>
 #include <QSaveFile>
 
+#ifdef Q_OS_WASM
+#include <emscripten.h>
+#endif
+
 Q_LOGGING_CATEGORY(lcLayout, "qp.layout")
+
+#ifdef Q_OS_WASM
+// A page's files are gone on reload; the browser keeps localStorage per site. The layout file is a
+// mirror of the browser's copy: restored before loading, copied back after saving. Main thread only.
+namespace {
+
+QByteArray browserKey(const QString &path)
+{
+    return (QStringLiteral("qtqmlpro:") + path).toUtf8();
+}
+
+void restoreFromBrowser(const QString &path)
+{
+    const QByteArray key = browserKey(path);
+    char *text = static_cast<char *>(EM_ASM_PTR({
+        const v = localStorage.getItem(UTF8ToString($0));
+        return v === null ? 0 : stringToNewUTF8(v);
+    }, key.constData()));
+    if (!text)
+        return;
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    QFile f(path);
+    if (f.open(QIODevice::WriteOnly))
+        f.write(text);
+    free(text);
+}
+
+void keepInBrowser(const QString &path, const QByteArray &content)
+{
+    const QByteArray key = browserKey(path);
+    EM_ASM({
+        if ($1)
+            localStorage.setItem(UTF8ToString($0), UTF8ToString($1));
+        else
+            localStorage.removeItem(UTF8ToString($0));
+    }, key.constData(), content.isNull() ? nullptr : content.constData());
+}
+
+} // namespace
+#endif
 
 LayoutStore::LayoutStore(const QString &path, QObject *parent) : QObject(parent), m_path(path)
 {
@@ -38,6 +82,9 @@ void LayoutStore::load()
         setStatus(QStringLiteral("not saved (benchmark or --set layout=0)"));
         return;
     }
+#ifdef Q_OS_WASM
+    restoreFromBrowser(m_path);
+#endif
     QFile f(m_path);
     if (!f.exists()) {
         setStatus(QStringLiteral("defaults (no saved layout yet)"));
@@ -56,6 +103,12 @@ void LayoutStore::load()
         const QString aside = m_path + QStringLiteral(".bad-")
                               + QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"));
         QFile::rename(m_path, aside);
+#ifdef Q_OS_WASM
+        QFile kept(aside);
+        if (kept.open(QIODevice::ReadOnly))
+            keepInBrowser(aside, kept.readAll());
+        keepInBrowser(m_path, QByteArray());
+#endif
         setStatus(QStringLiteral("defaults: the saved layout was damaged (kept as %1)").arg(QFileInfo(aside).fileName()));
         qCWarning(lcLayout) << "damaged layout file set aside as" << aside << pe.errorString();
         return;
@@ -115,11 +168,15 @@ bool LayoutStore::save()
     m_file[u"version"] = kVersion;
     m_file[u"values"] = values;
     QDir().mkpath(QFileInfo(m_path).absolutePath());
+    const QByteArray json = QJsonDocument(m_file).toJson();
     QSaveFile f(m_path);
-    if (!f.open(QIODevice::WriteOnly) || f.write(QJsonDocument(m_file).toJson()) < 0 || !f.commit()) {
+    if (!f.open(QIODevice::WriteOnly) || f.write(json) < 0 || !f.commit()) {
         qCWarning(lcLayout) << "cannot save layout to" << m_path << f.errorString();
         return false;
     }
+#ifdef Q_OS_WASM
+    keepInBrowser(m_path, json);
+#endif
     emit saved();
     return true;
 }

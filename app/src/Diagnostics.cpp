@@ -16,6 +16,9 @@
 
 #include <malloc.h>
 #include <unistd.h>
+#ifdef Q_OS_WASM
+#include <emscripten.h>
+#endif
 
 namespace {
 
@@ -138,6 +141,12 @@ Diagnostics::~Diagnostics()
 
 double Diagnostics::msSinceProcessStart()
 {
+#ifdef Q_OS_WASM
+    // emscripten_get_now() counts from the epoch here (the same clock on every thread); the page's
+    // own origin is read once, first called from main() on the browser's main thread.
+    static const double origin = EM_ASM_DOUBLE({ return performance.timeOrigin; });
+    return emscripten_get_now() - origin;
+#endif
     QFile stat(QStringLiteral("/proc/self/stat"));
     QFile uptime(QStringLiteral("/proc/uptime"));
     if (!stat.open(QIODevice::ReadOnly) || !uptime.open(QIODevice::ReadOnly))
@@ -268,7 +277,11 @@ void Diagnostics::sampleProcess()
         }
         if (t0 - heapAtNs >= 10'000'000'000LL) {
             const qint64 tm = qp::nowNs();
+#ifdef Q_OS_WASM
+            const struct mallinfo mi = mallinfo(); // Emscripten's dlmalloc; no mallinfo2
+#else
             const struct mallinfo2 mi = mallinfo2();
+#endif
             heap = {{QStringLiteral("heapInUseMb"), double(mi.uordblks) / 1e6},
                     {QStringLiteral("heapFreeMb"), double(mi.fordblks) / 1e6},
                     {QStringLiteral("mmapMb"), double(mi.hblkhd) / 1e6},

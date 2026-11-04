@@ -3,6 +3,7 @@
 #include <QMetaType>
 #include <QString>
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -10,11 +11,16 @@
 
 namespace qp {
 
+// Added to every reading: --set clockOffsetMs=<ms> gives this process the skew another machine's
+// clock would have (step 11). Set once at start-up.
+inline std::atomic<int64_t> g_clockOffsetNs{0};
+
 inline int64_t nowNs()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::steady_clock::now().time_since_epoch())
-        .count();
+               .count()
+           + g_clockOffsetNs.load(std::memory_order_relaxed);
 }
 
 struct Workload

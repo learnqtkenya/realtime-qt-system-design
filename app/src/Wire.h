@@ -26,6 +26,10 @@ QByteArray tracksRecord(const qp::TrackSetPtr &set);
 QByteArray eventsRecord(const qp::EventBatchPtr &batch);
 QByteArray overlayRecord(const OverlayFrame &frame);
 QByteArray selectionRecord(qint64 t, int trackId);
+// A clock probe: the client sends its time (server 0); the server echoes it with its own (step 11).
+QByteArray clockRecord(qint64 clientNs, qint64 serverNs);
+// The client's credit: every byte of the stream it has finished with, counted from its first byte.
+QByteArray creditRecord(qint64 consumedBytes);
 
 struct Decoded
 {
@@ -37,6 +41,8 @@ struct Decoded
     qp::EventBatchPtr events;
     OverlayFramePtr overlay;
     int selection = -1;
+    qint64 clockClientNs = 0, clockServerNs = 0;
+    qint64 credit = -1;
 };
 
 // Incremental: feed bytes as they arrive; complete records come out.
@@ -67,6 +73,34 @@ private:
     bool m_hello = false;
     QJsonObject m_info;
     qint64 m_unknown = 0;
+};
+
+// Another process's clock, from probes (Cristian's algorithm): offset = server - (sent + rtt / 2),
+// wrong by at most rtt / 2. The lowest-rtt probe of the recent ones wins: a probe that waited
+// behind a backlog carries a long rtt, not a wrong offset.
+class ClockSync
+{
+public:
+    // Before any probe returns: the server's clock in its hello, read at arrival (wrong by the
+    // one-way delay).
+    void seed(qint64 serverNs, qint64 localNs);
+    void add(qint64 sentNs, qint64 serverNs, qint64 receivedNs);
+    bool known() const { return m_known; }
+    qint64 offsetNs() const { return m_offset; } // server clock - local clock
+    qint64 rttNs() const { return m_rtt; }       // of the probe in use; -1 while seeded only
+    qint64 toLocal(qint64 serverNs) const { return serverNs - m_offset; }
+    int probes() const { return m_count; }
+
+private:
+    struct Sample
+    {
+        qint64 offset, rtt;
+    };
+    static constexpr int kWindow = 16;
+    Sample m_samples[kWindow]{};
+    int m_count = 0;
+    bool m_known = false;
+    qint64 m_offset = 0, m_rtt = -1;
 };
 
 } // namespace wire
