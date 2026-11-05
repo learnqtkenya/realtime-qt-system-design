@@ -223,8 +223,8 @@ private:
                || host == QLatin1String("::1");
     }
 
-    // Writes held records while the socket's backlog is small: TCP's own flow control, used as the
-    // client's credit.
+    // Writes held records while the socket's backlog is small and, for clients that send credit, while
+    // what they have not yet processed is under the window (a browser drains its socket at once).
     void pump(Session &s)
     {
         while (s.backlog() < m_highWater && (!s.credit || s.written - s.acked < m_creditWindow)) {
