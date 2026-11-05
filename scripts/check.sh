@@ -2,9 +2,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-QT=/opt/Qt/6.12.0/gcc_64
+# Qt 6.12 for desktop; set QT_DIR if it is not in /opt/Qt.
+QT="${QT_DIR:-/opt/Qt/6.12.0/gcc_64}"
 
-cmake --preset release >/dev/null
+cmake --preset release -DCMAKE_PREFIX_PATH="$QT" >/dev/null
 cmake --build --preset release
 ctest --preset release
 
